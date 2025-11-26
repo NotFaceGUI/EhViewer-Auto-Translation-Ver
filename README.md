@@ -19,11 +19,11 @@ Fork 来源：基于 `Ehviewer_CN_SXJ` 仓库二次开发并聚焦翻译功能�
   <tr>
     <td align="center" valign="top">
       <a href="doc/1.png"><img src="doc/1.png" alt="演示1：普通服务配置" width="360"></a>
-      <div>演示1：普通服务配置</div>
+      <div>演示1：设置阅读是否优先显示翻译版本</div>
     </td>
     <td align="center" valign="top">
       <a href="doc/2.png"><img src="doc/2.png" alt="演示2：大模型配置" width="360"></a>
-      <div>演示2：大模型配置</div>
+      <div>演示2：翻译服务配置</div>
     </td>
   </tr>
   <tr><td colspan="2" style="height:12px"></td></tr>
