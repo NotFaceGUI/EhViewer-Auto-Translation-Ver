@@ -17,6 +17,8 @@ public class TranslationTaskInfo {
     public int downloadProgress;
     public boolean singlePage;
     public int pageIndex;
+    public int rangeStart;
+    public int rangeEnd;
     public String sourcePath;
 
     public enum State {

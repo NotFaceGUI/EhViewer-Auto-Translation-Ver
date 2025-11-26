@@ -55,6 +55,8 @@ public class TranslationQueueManager {
         t.jobId = generateJobId();
         t.singlePage = false;
         t.pageIndex = -1;
+        t.rangeStart = 0;
+        t.rangeEnd = 0;
         list.add(0, t);
         notifyChanged();
         if (currentJobId == null) {
@@ -62,6 +64,82 @@ public class TranslationQueueManager {
             startNextSafely(t);
         }
         return true;
+    }
+
+    public synchronized boolean enqueueRange(DownloadInfo info, int startPage, int endPage) {
+        int s = Math.max(1, startPage);
+        int epage = Math.max(s, endPage);
+        for (TranslationTaskInfo e : list) {
+            if (e.gid == info.gid && !e.singlePage && e.rangeStart == s && e.rangeEnd == epage && e.state != TranslationTaskInfo.State.Canceled && e.state != TranslationTaskInfo.State.Completed) {
+                return false;
+            }
+        }
+        TranslationTaskInfo t = new TranslationTaskInfo();
+        t.gid = info.gid;
+        t.token = info.token;
+        t.title = info.title + " [" + s + "-" + epage + "]";
+        t.thumb = info.thumb;
+        t.uploader = info.uploader;
+        t.rating = info.rating;
+        t.progress = 0;
+        t.state = TranslationTaskInfo.State.Waiting;
+        t.jobId = generateJobId();
+        t.singlePage = false;
+        t.pageIndex = -1;
+        t.rangeStart = s;
+        t.rangeEnd = epage;
+        list.add(0, t);
+        notifyChanged();
+        if (currentJobId == null) {
+            startNextSafely(t);
+        }
+        return true;
+    }
+
+    public synchronized boolean addUploadedJob(DownloadInfo info, String jobId, Integer startPage, Integer endPage) {
+        int s = startPage != null ? Math.max(1, startPage) : 0;
+        int epage = endPage != null ? Math.max(s, endPage) : 0;
+        for (TranslationTaskInfo e : list) {
+            boolean sameRange = (!e.singlePage) && (e.rangeStart == s) && (e.rangeEnd == epage);
+            if (e.gid == info.gid && sameRange && e.state != TranslationTaskInfo.State.Canceled && e.state != TranslationTaskInfo.State.Completed) {
+                return false;
+            }
+        }
+        TranslationTaskInfo t = new TranslationTaskInfo();
+        t.gid = info.gid;
+        t.token = info.token;
+        t.title = info.title + ((s > 0 && epage >= s) ? (" [" + s + "-" + epage + "]") : "");
+        t.thumb = info.thumb;
+        t.uploader = info.uploader;
+        t.rating = info.rating;
+        t.progress = 0;
+        t.state = TranslationTaskInfo.State.Translating;
+        t.jobId = jobId;
+        t.singlePage = false;
+        t.pageIndex = -1;
+        t.rangeStart = s;
+        t.rangeEnd = epage;
+        list.add(0, t);
+        currentJobId = jobId;
+        notifyChanged();
+        poller.start();
+        return true;
+    }
+
+    public static File buildZipFor(DownloadInfo info, Integer startPage, Integer endPage) throws Exception {
+        GalleryInfo gi = new GalleryInfo();
+        gi.gid = info.gid;
+        gi.title = info.title;
+        UniFile dir = SpiderDen.getGalleryDownloadDir(gi);
+        if (dir == null || !dir.exists()) return null;
+        File tmpZip = File.createTempFile("submit_" + info.gid + "_", ".zip");
+        boolean useRange = (startPage != null && endPage != null && startPage > 0 && endPage >= startPage);
+        if (useRange) {
+            compressRangeToZip(dir, tmpZip, startPage, endPage);
+        } else {
+            compressDirToZip(dir, tmpZip);
+        }
+        return tmpZip;
     }
 
     public synchronized boolean enqueueForce(DownloadInfo info) {
@@ -187,7 +265,11 @@ public class TranslationQueueManager {
                     UniFile translated = dir.findFile("translated");
                     if (translated == null) translated = dir.createDirectory("translated");
                     File tmpZip = File.createTempFile("submit_" + t.gid + "_", ".zip");
-                    compressDirToZip(dir, tmpZip);
+                    if (t.rangeStart > 0 && t.rangeEnd >= t.rangeStart) {
+                        compressRangeToZip(dir, tmpZip, t.rangeStart, t.rangeEnd);
+                    } else {
+                        compressDirToZip(dir, tmpZip);
+                    }
                     String jobId = TranslationApi.submitZip(tmpZip.getAbsolutePath());
                     try { tmpZip.delete(); } catch (Exception ignored) {}
                     if (jobId != null) {
@@ -264,7 +346,7 @@ public class TranslationQueueManager {
         }).start();
     }
 
-    private void compressDirToZip(UniFile srcDir, File outZip) throws Exception {
+    private static void compressDirToZip(UniFile srcDir, File outZip) throws Exception {
         ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outZip));
         try {
             zipRec(zos, srcDir, "");
@@ -273,7 +355,36 @@ public class TranslationQueueManager {
         }
     }
 
-    private void zipRec(ZipOutputStream zos, UniFile file, String basePath) throws Exception {
+    private static void compressRangeToZip(UniFile srcDir, File outZip, int startPage, int endPage) throws Exception {
+        ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outZip));
+        try {
+            UniFile[] children = srcDir.listFiles();
+            if (children != null) {
+                for (int i = startPage; i <= endPage; i++) {
+                    String pageNum = String.format(java.util.Locale.US, "%08d", i);
+                    for (UniFile c : children) {
+                        String name = c.getName();
+                        if (name == null) continue;
+                        if ("translated".equals(name)) continue;
+                        if (c.isDirectory()) continue;
+                        if (name.contains(pageNum)) {
+                            zos.putNextEntry(new java.util.zip.ZipEntry(name));
+                            InputStream is = c.openInputStream();
+                            byte[] buf = new byte[8192];
+                            int r;
+                            while ((r = is.read(buf)) != -1) zos.write(buf, 0, r);
+                            try { is.close(); } catch (Exception ignored) {}
+                            zos.closeEntry();
+                        }
+                    }
+                }
+            }
+        } finally {
+            try { zos.close(); } catch (Exception ignored) {}
+        }
+    }
+
+    private static void zipRec(ZipOutputStream zos, UniFile file, String basePath) throws Exception {
         if (file.isDirectory()) {
             UniFile[] children = file.listFiles();
             if (children != null) {
@@ -503,6 +614,8 @@ public class TranslationQueueManager {
                 o.put("state", t.state != null ? t.state.name() : null);
                 o.put("singlePage", t.singlePage);
                 o.put("pageIndex", t.pageIndex);
+                o.put("rangeStart", t.rangeStart);
+                o.put("rangeEnd", t.rangeEnd);
                 o.put("downloaded", t.downloaded);
                 o.put("processProgress", t.processProgress);
                 o.put("translateProgress", t.translateProgress);
@@ -536,25 +649,27 @@ public class TranslationQueueManager {
                 for (int i = 0; i < arr.length(); i++) {
                     org.json.JSONObject o = arr.optJSONObject(i);
                     if (o == null) continue;
-                    TranslationTaskInfo t = new TranslationTaskInfo();
-                    t.gid = o.optLong("gid", 0);
-                    t.token = o.optString("token", null);
-                    t.title = o.optString("title", null);
-                    t.thumb = o.optString("thumb", null);
-                    t.uploader = o.optString("uploader", null);
-                    t.rating = (float) o.optDouble("rating", 0.0);
-                    t.jobId = o.optString("jobId", null);
-                    String st = o.optString("state", null);
-                    try { t.state = st != null ? TranslationTaskInfo.State.valueOf(st) : null; } catch (Exception ignored) {}
-                    t.singlePage = o.optBoolean("singlePage", false);
-                    t.pageIndex = o.optInt("pageIndex", -1);
-                    t.downloaded = o.optBoolean("downloaded", false);
-                    t.processProgress = o.optInt("processProgress", 0);
-                    t.translateProgress = o.optInt("translateProgress", 0);
-                    t.downloading = o.optBoolean("downloading", false);
-                    t.downloadProgress = o.optInt("downloadProgress", 0);
-                    list.add(t);
-                }
+                TranslationTaskInfo t = new TranslationTaskInfo();
+                t.gid = o.optLong("gid", 0);
+                t.token = o.optString("token", null);
+                t.title = o.optString("title", null);
+                t.thumb = o.optString("thumb", null);
+                t.uploader = o.optString("uploader", null);
+                t.rating = (float) o.optDouble("rating", 0.0);
+                t.jobId = o.optString("jobId", null);
+                String st = o.optString("state", null);
+                try { t.state = st != null ? TranslationTaskInfo.State.valueOf(st) : null; } catch (Exception ignored) {}
+                t.singlePage = o.optBoolean("singlePage", false);
+                t.pageIndex = o.optInt("pageIndex", -1);
+                t.rangeStart = o.optInt("rangeStart", 0);
+                t.rangeEnd = o.optInt("rangeEnd", 0);
+                t.downloaded = o.optBoolean("downloaded", false);
+                t.processProgress = o.optInt("processProgress", 0);
+                t.translateProgress = o.optInt("translateProgress", 0);
+                t.downloading = o.optBoolean("downloading", false);
+                t.downloadProgress = o.optInt("downloadProgress", 0);
+                list.add(t);
+            }
             }
         } catch (Exception ignored) {}
     }

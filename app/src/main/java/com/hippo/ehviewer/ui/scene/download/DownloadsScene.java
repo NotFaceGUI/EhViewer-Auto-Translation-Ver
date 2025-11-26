@@ -64,6 +64,10 @@ import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.hippo.android.resource.AttrResources;
 import com.hippo.app.CheckBoxDialogBuilder;
+import com.hippo.app.EditTextDialogBuilder;
+import android.widget.Button;
+import android.widget.ProgressBar;
+import java.io.File;
 import com.hippo.drawable.AddDeleteDrawable;
 import com.hippo.drawerlayout.DrawerLayout;
 import com.hippo.easyrecyclerview.EasyRecyclerView;
@@ -87,6 +91,7 @@ import com.hippo.ehviewer.spider.SpiderInfo;
 import com.hippo.ehviewer.sync.DownloadListInfosExecutor;
 import com.hippo.ehviewer.sync.DownloadSpiderInfoExecutor;
 import com.hippo.ehviewer.translation.TranslationQueueManager;
+import com.hippo.ehviewer.translation.TranslationApi;
 import com.hippo.ehviewer.ui.GalleryActivity;
 import com.hippo.ehviewer.ui.MainActivity;
 import com.hippo.ehviewer.ui.annotation.ViewLifeCircle;
@@ -950,6 +955,7 @@ public class DownloadsScene extends ToolbarScene
         if (null == context || null == activity || null == recyclerView) {
             return;
         }
+        Log.d(TAG, "secondaryFab click position=" + position);
 
         if (0 == position) {
             recyclerView.checkAll();
@@ -971,6 +977,7 @@ public class DownloadsScene extends ToolbarScene
             }
 
             SparseBooleanArray stateArray = recyclerView.getCheckedItemPositions();
+            Log.d(TAG, "checkedItemPositions size=" + (stateArray != null ? stateArray.size() : -1));
             for (int i = 0, n = stateArray.size(); i < n; i++) {
                 if (stateArray.valueAt(i)) {
                     DownloadInfo info = list.get(positionInList(stateArray.keyAt(i)));
@@ -982,6 +989,8 @@ public class DownloadsScene extends ToolbarScene
                     }
                 }
             }
+            Log.d(TAG, "collectGid=" + collectGid + ", collectDownloadInfo=" + collectDownloadInfo);
+            Log.d(TAG, "selected gid count=" + (gidList != null ? gidList.size() : 0) + ", downloadInfo count=" + (downloadInfoList != null ? downloadInfoList.size() : 0));
 
             switch (position) {
                 case 1: { // Start
@@ -1043,23 +1052,110 @@ public class DownloadsScene extends ToolbarScene
                     break;
                 }
                 case 5: { // Enqueue to Translation Queue
-                    if (downloadInfoList == null || downloadInfoList.isEmpty()) {
-                        break;
+                    Log.d(TAG, "enter case 5 (enqueue translation) v2");
+                    final java.util.List<DownloadInfo> listForEnqueue = downloadInfoList != null ? new java.util.ArrayList<>(downloadInfoList) : new java.util.ArrayList<>();
+                    Log.d(TAG, "enqueue translation case5 selected=" + listForEnqueue.size());
+                    EditTextDialogBuilder builder = new EditTextDialogBuilder(context, null, "起止页，例如 2-10");
+                    builder.setTitle("输入翻译页范围");
+                    builder.setPositiveButton(android.R.string.ok, null);
+                    builder.setNegativeButton(android.R.string.cancel, null);
+                    Log.d(TAG, "enqueue translation show dialog");
+                    androidx.appcompat.app.AlertDialog dlg = builder.show();
+                    Button okBtn = dlg.getButton(android.content.DialogInterface.BUTTON_POSITIVE);
+                    if (okBtn != null) {
+                        okBtn.setOnClickListener(v -> {
+                            String text = builder.getText();
+                            String s = text == null ? "" : text.trim();
+                            Log.d(TAG, "range input raw=" + s);
+                            int start = -1;
+                            int end = -1;
+                            try {
+                                String norm = s.replace('－','-').replace('—','-').replace('–','-');
+                                if (norm.isEmpty()) {
+                                    start = 0;
+                                    end = 0;
+                                } else {
+                                    String[] parts;
+                                    if (norm.contains("-")) {
+                                        parts = norm.split("-");
+                                    } else if (norm.contains(" ")) {
+                                        parts = norm.split(" +");
+                                    } else {
+                                        parts = new String[]{norm};
+                                    }
+                                    if (parts.length == 1) {
+                                        start = Integer.parseInt(parts[0]);
+                                        end = start;
+                                    } else {
+                                        start = Integer.parseInt(parts[0]);
+                                        end = Integer.parseInt(parts[1]);
+                                    }
+                                }
+                            } catch (Exception ex) {
+                                start = -1;
+                                end = -1;
+                            }
+                            Log.d(TAG, "range parsed start=" + start + ", end=" + end);
+                            if ((start > 0 && end > 0 && end < start) || (start < 0 || end < 0)) {
+                                builder.setError("格式错误，示例：2-10");
+                                Log.d(TAG, "range invalid");
+                                return;
+                            }
+                            if (listForEnqueue.isEmpty()) {
+                                Toast.makeText(context, "请先选择需要翻译的项目", Toast.LENGTH_SHORT).show();
+                                Log.d(TAG, "no selected items");
+                                return;
+                            }
+                            for (DownloadInfo di : listForEnqueue) {
+                                final DownloadInfo diFinal = di;
+                                final Integer startBox = (start > 0) ? Integer.valueOf(start) : null;
+                                final Integer endBox = (end > 0) ? Integer.valueOf(end) : null;
+                                final MyEasyRecyclerView rvFinal = recyclerView;
+                                androidx.appcompat.app.AlertDialog pd;
+                                android.widget.LinearLayout layout = new android.widget.LinearLayout(context);
+                                layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+                                TextView tv = new TextView(context);
+                                final TextView tvFinal = tv;
+                                tvFinal.setText("准备中...");
+                                ProgressBar pb = new ProgressBar(context);
+                                pb.setIndeterminate(true);
+                                layout.addView(tvFinal);
+                                layout.addView(pb);
+                                pd = new androidx.appcompat.app.AlertDialog.Builder(context).setTitle("上传翻译").setView(layout).setCancelable(false).create();
+                                final androidx.appcompat.app.AlertDialog pdFinal = pd;
+                                pdFinal.show();
+                                new Thread(() -> {
+                                    try {
+                                        Activity act = getActivity2();
+                                        if (act != null) act.runOnUiThread(() -> tvFinal.setText("打包中..."));
+                                        File zip = TranslationQueueManager.buildZipFor(diFinal, startBox, endBox);
+                                        if (act != null) act.runOnUiThread(() -> tvFinal.setText("上传中..."));
+                                        String jobId = TranslationApi.submitZip(zip.getAbsolutePath());
+                                        try { zip.delete(); } catch (Exception ignored) {}
+                                        if (jobId != null) {
+                                            if (act != null) act.runOnUiThread(() -> tvFinal.setText("成功，jobId=" + jobId));
+                                            boolean added = TranslationQueueManager.getInstance().addUploadedJob(diFinal, jobId, startBox, endBox);
+                                            Log.d(TAG, "addUploadedJob gid=" + diFinal.gid + ", title=" + diFinal.title + ", jobId=" + jobId + ", added=" + added);
+                                        } else {
+                                            if (act != null) act.runOnUiThread(() -> tvFinal.setText("上传失败"));
+                                        }
+                                    } catch (Exception ex2) {
+                                        Activity act = getActivity2();
+                                        if (act != null) act.runOnUiThread(() -> tvFinal.setText("异常: " + ex2.getMessage()));
+                                    } finally {
+                                        Activity act = getActivity2();
+                                        if (act != null) act.runOnUiThread(() -> {
+                                            pdFinal.dismiss();
+                                            rvFinal.outOfCustomChoiceMode();
+                                        });
+                                    }
+                                }).start();
+                            }
+                            dlg.dismiss();
+                        });
+                    } else {
+                        Log.d(TAG, "positive button null");
                     }
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("enqueue translation, count=").append(downloadInfoList.size());
-                    for (DownloadInfo di : downloadInfoList) {
-                        sb.append("; gid=").append(di.gid).append(", title=").append(di.title);
-                    }
-                    Log.d(TAG, sb.toString());
-                    boolean anyAdded = false;
-                    for (DownloadInfo di : downloadInfoList) {
-                        if (TranslationQueueManager.getInstance().enqueue(di)) {
-                            anyAdded = true;
-                        }
-                    }
-                    Toast.makeText(context, anyAdded ? R.string.added_to_translation_queue : R.string.already_in_translation_queue, Toast.LENGTH_SHORT).show();
-                    recyclerView.outOfCustomChoiceMode();
                     break;
                 }
                 case 6:
