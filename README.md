@@ -105,6 +105,12 @@ Fork 来源：基于 `Ehviewer_CN_SXJ` 仓库二次开发并聚焦翻译功能�
   - 环境要求：`Python <= 3.12`，建议安装 Git；确保可以访问所需模型文件。
   - 获取源码或按其说明下载打包版；随后将提供的 API 服务解压到项目根目录下即可。
   - 启动服务：`python -m uvicorn server.api:app --host 0.0.0.0 --port 8000`
+  - 需要额外安装：Pillow
+                fastapi
+                uvicorn
+                python-multipart
+                psutil
+                gradio
   - 在应用中配置“设置-翻译设置”：填入服务主机与端口，使用“测试连接”确认可用后即可开始上传 zip/单页进行翻译。
   - 使用的远端的配置，客户端不支持配置修改，若需修改请直接修改服务配置。
 
