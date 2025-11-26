@@ -1,277 +1,124 @@
-# [常见问题汇总](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/feedauthor/EhviewerIssue.md)
+# EhViewer 自动翻译（自用）
+
+本仓库仅用于为 EhViewer 增加“图片内文本翻译”能力，聚焦翻译相关逻辑与使用说明。内容仅供个人自用与研究，不提供技术支持，接口与行为可能随时变更。
+
+Fork 来源：基于 `Ehviewer_CN_SXJ` 仓库二次开发并聚焦翻译功能，上游仓库 `https://github.com/xiaojieonly/Ehviewer_CN_SXJ`；原始项目 `EhViewer` 由 `seven332` 开发（`https://github.com/seven332/EhViewer`）。
+
+## 功能概览
+- 大模型单页翻译：在阅读页对当前图片进行遮罩与生成式翻译，生成译后图片并保存到 `translated` 子目录，页面会自动刷新显示。
+- 普通批量翻译：将整本画廊打包为 zip 上传至本地服务，由服务端执行检测、OCR、擦写/重绘、翻译与导出，客户端轮询进度并下载结果。
+- 使用定位：仅用于方便一键机翻，效果可能差强人意，适用于懒得手动修的，可在手机上直接翻译。
+- 交互能力：支持在阅读页进行“译文/原文”切换，便于比对与回退。
+- 支持范围翻译：可在普通批量翻译中选择翻译范围（例如2-5，代表第2页到第5页），默认全部。
+
+## 演示
+
+翻译配置（1–2）：在设置中填写普通服务主机/端口并测试连接；配置大模型的基地址、模型、通用提示词与 `API Key`。点击图片可查看原图。
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <a href="doc/1.png"><img src="doc/1.png" alt="演示1：普通服务配置" width="360"></a>
+      <div>演示1：普通服务配置</div>
+    </td>
+    <td align="center" valign="top">
+      <a href="doc/2.png"><img src="doc/2.png" alt="演示2：大模型配置" width="360"></a>
+      <div>演示2：大模型配置</div>
+    </td>
+  </tr>
+  <tr><td colspan="2" style="height:12px"></td></tr>
+</table>
+
+普通翻译流程（3–6）：在下载页选择“上传翻译”（支持范围选择），上传打包 zip；客户端轮询服务进度；结果下载到 `translated` 目录并自动刷新，阅读页可在“译文/原文”间切换。
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <a href="doc/3.png"><img src="doc/3.png" alt="演示3：选择范围" width="300"></a>
+      <div>演示3：在下载列表选择需要翻译的作品</div>
+    </td>
+    <td align="center" valign="top">
+      <a href="doc/4.png"><img src="doc/4.png" alt="演示4：上传打包" width="300"></a>
+      <div>演示4：范围选择</div>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top">
+      <a href="doc/5.png"><img src="doc/5.png" alt="演示5：进度轮询" width="300"></a>
+      <div>演示5：翻译队列进度显示</div>
+    </td>
+    <td align="center" valign="top">
+      <a href="doc/6.png"><img src="doc/6.png" alt="演示6：译后展示与切换" width="300"></a>
+      <div>演示6：译后展示</div>
+    </td>
+  </tr>
+</table>
+
+大模型单页翻译（7–9）：在阅读页菜单选择“大模型翻译本页”（可先遮罩文本区域）；展示生成式翻译效果；对提示词增加“上色”等样式后展示改进示例。
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <a href="doc/7.png"><img src="doc/7.png" alt="演示7：选择大模型翻译本页" width="320"></a>
+      <div>演示7：选择大模型翻译本页</div>
+    </td>
+    <td align="center" valign="top">
+      <a href="doc/8.png"><img src="doc/8.png" alt="演示8：大模型翻译效果" width="320"></a>
+      <div>演示8：大模型翻译效果</div>
+    </td>
+    <td align="center" valign="top">
+      <a href="doc/9.png"><img src="doc/9.png" alt="演示9：提示词上色后的效果" width="320"></a>
+      <div>演示9：提示词上色后的效果</div>
+    </td>
+  </tr>
+</table>
+
+## 自用声明
+
+- 本项目仅满足作者个人使用场景，不保证稳定性与兼容性，不保证与上游仓库的同步更新。
+- 不提供任何账号、密钥或云资源，也不保证第三方服务可用性。
+- 使用造成的风险与后果由使用者自行承担，请勿用于任何违规用途。
+ - 软件包分离与数据隔离：本软件与原始 EhViewer 的安装包分离，数据默认隔离。可使用“导出软件数据”功能进行同步与迁移（导出为数据库文件后在另一侧导入）。
+
+## 大模型的局限与策略
+
+- NSFW 限制：生成式模型可能拒绝或弱化成人内容，或输出不完整。策略为仅遮罩气泡/文本区域、弱化提示词、必要时降级为普通服务。
+- 批量限制：成本与速率限制，以及额外的内容审查导致批量不太理想，仅在必要时使用大模型，故“不支持使用大模型进行批量翻译”。批量需求请使用下述普通服务方案。
+- 质量与排版：生成图可能尺寸不一致或出现边缘瑕疵，客户端会缩放并做透明背景处理，但仍可能存在错位或风格不一致。
+- API 依赖：需自备 `API Key`，模型与基地址可在应用设置内配置通用提示词与模型参数。
+
+## 普通翻译需要自建服务
+
+- 需要本地或内网运行一个 HTTP 服务（默认 `http://0.0.0.0:8000`）。
+- 客户端调用的接口约定：
+  - `GET /`：连通性测试。
+  - `POST /translate`：表单上传 `zip`（整本）或 `file`（单张），返回 `{"job_id": "..."}`。
+  - `GET /status?job_id=...`：查询任务进度与状态。
+  - `GET /current_job`：获取当前任务信息。
+  - `POST /cancel_current`：取消当前任务。
+  - `GET /result?job_id=...`：下载翻译结果（打包输出）。
+- 端口与主机在应用“设置-翻译设置”中配置：`translation_base_host/服务器主机`、`translation_base_port/服务器端口`。
+- 输出格式建议 `webp`, 保持与输入相同的尺寸与质量。
 
-# EhViewer
+- 快速部署示例（基于 BallonsTranslator）：
+  - 仓库地址：`https://github.com/dmMaze/BallonsTranslator`（部署与依赖说明见其 README）。
+  - 环境要求：`Python <= 3.12`，建议安装 Git；确保可以访问所需模型文件。
+  - 获取源码或按其说明下载打包版；随后将提供的 API 服务解压到项目根目录下即可。
+  - 启动服务：`python -m uvicorn server.api:app --host 0.0.0.0 --port 8000`
+  - 在应用中配置“设置-翻译设置”：填入服务主机与端口，使用“测试连接”确认可用后即可开始上传 zip/单页进行翻译。
+  - 使用的远端的配置，客户端不支持配置修改，若需修改请直接修改服务配置。
 
-![Icon](fastlane/metadata/android/en-US/images/icon.png)
+## 配置提示
 
-这是一个 E-Hentai Android 平台的浏览器。
+- 大模型相关：可在设置中配置基地址、模型、通用提示词及 API Key。
+- 普通服务相关：在设置中填入服务主机与端口后，可使用“测试连接”验证连通性。
+- 模型支持范围：仅支持 Gemini API 的格式的模型。
 
-An E-Hentai Application for Android.
+## 目录与输出
 
-# Download
+- 译后图片保存在对应画廊下载目录的 `translated` 子目录下。
 
-点击前往下载：
+## 免责声明
 
-[//]: # (- [Appteka]&#40;https://appteka.store/app/acdr168648&#41;)
-- [百度云](https://pan.baidu.com/s/1c0bCCgfiTa4G9hwopSyAOw) 提取码：4vu2
-- [蓝奏云](https://wwsu.lanzouu.com/iYYrU3adzm5e)，电脑端可正常下载 提取码：f6f0
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-- Torrent链接: magnet:?xt=urn:btih:002aea861f2af0bc84618bdf23acf5558ca1f665&xt=urn:btmh:1220648f8a4ad80b944ea1e9437d0021034205eb7c60b918a6f6d57bf36e47ecb247&dn=EhViewer-2.0.0.8.apk&xl=23456665
-
-点击前往赏饭：
-
-- [要饭嘛不寒掺](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/feedauthor/support.md)
-
-唯一X账号：https://x.com/Sherloc21784244    
-Telegram群: https://t.me/+WyclP8pPlk-JfbwS    
-Telegram通知群: https://t.me/Ehviewer_xiaojieonly_channel
-
-# Changelog
-
-## 2025/11/07
-### 新版发布2.0.0.8
-
-- 移除不再使用的 Firebase Crashlytics 导入。
-- 在 EhDB 和 SpiderDen 中添加异常处理以避免应用崩溃。
-- 增加在 TreeDocumentFile 中列出文件时的空值检查和异常处理。
-- 为 WebViewSignInScene 中的 HTTP 响应添加默认的 reason phrase。
-- 增强 GLRootView 中的 EGL 配置选择逻辑，增加备用方案以提高稳定性。
-- 将 Analytics.java 迁移到 Kotlin。
-
-## 2025/11/01 
-### 新版发布2.0.0.5
-
-- 在悬浮工具烂中添加拖动切换按钮，只有开启时才允许进行拖动排序
-- wyapx：use Analytics to manage all Firebase request (#2129)
-- West-Pavilion：添加本地压缩包导入功能：下载->右上菜单->导入本地压缩包
-  [//]: # (- [Appteka]&#40;https://appteka.store/app/acdr168648&#41;)
-- [百度云](https://pan.baidu.com/s/1ocYZZ0j5gmb2KUkcJM1Wnw) 提取码：xem5
-- [蓝奏云](https://wwsu.lanzouu.com/iPadd39veuyh)，电脑端可正常下载 提取码：en1v
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-- Torrent链接: magnet:?xt=urn:btih:2f123b5c605e8c8f487989049f8f00c6aa3ab169&xt=urn:btmh:122046c1e5bfa7fb7a5520e93be932576211d01b5760d8b1fc8081d48410e5e9e486&dn=EhViewer-2.0.0.5.apk&xl=23260086
-
-
-## 2025/10/05 : 感谢nullcat的pr   
-### 新版发布2.0.0.4    
-
-- 修复下载列表排序功能在部分机型上会崩溃的问题    
-- add samsung Air action support (#2119)    
-- wrong direction on mouse scroll (#2130)    
-- add auto dark mode (#2126)    
-- [百度云](https://pan.baidu.com/s/1R_XrMkZEOpgEJpA_sR4cFw) 提取码：yf3w
-- [蓝奏云](https://wwsu.lanzouu.com/ih0XT37rz82d)，电脑端可正常下载 提取码：h0mw
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-- Torrent链接: magnet:?xt=urn:btih:3aae02c07f1ac4f814c6583cc1074cbfb70dcda6&xt=urn:btmh:1220b3bf79110dc6daef678013a40c67492fc0cdf25460466b1a459f4479607127b0&dn=EhViewer-2.0.0.4.apk&xl=23252893
-
-
-## 2025/09/15 :
-### 新版发布2.0.0.2
-
-- 修复了下载列表进行排序时UI状态出错的问题
-- 修复了下载列表尝试排序时APP崩溃的问题
-- [//]: # (- [Appteka]&#40;https://appteka.store/app/acdr168648&#41;)
-- [百度云](https://pan.baidu.com/s/1qEUS4h1pEod8ifAHfsr3nA) 提取码：b2ga
-- [蓝奏云](https://wwsu.lanzouu.com/iSuEi368n53e)，电脑端可正常下载 提取码：h2y4
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-- Torrent链接: magnet:?xt=urn:btih:0f49565ab29fc7ab76ea313ca014442f2e9b0167&xt=urn:btmh:1220526f3b0ea65b5704625394e9ff546047e104e737c90e333a35b83ae1dc1beb5f&dn=EhViewer-2.0.0.2.apk&xl=23252086
-
-
-## 2025/09/01 : 
-### 新版发布2.0.0.1
-
-- 画廊名带“|”字符的都无法进行档案下载的问题
-- 搜索栏搜索时自动去除换行符
-- 千呼万唤始出来~下载列表添加排序功能，现在长按后即可拖动进行排序了
-- [百度云](https://pan.baidu.com/s/1uyBwzbf1n_dO1L_zWCYJvA) 提取码：sy3c
-- [蓝奏云](https://wwsu.lanzouu.com/iZB4g355985g)，电脑端可正常下载 提取码：ag8t
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-- Torrent链接: magnet:?xt=urn:btih:d297eb3575c9dd66b11fd1190da6de9ca99f13f4&xt=urn:btmh:1220bafa1275785022d096c4197f0b73c9d9302514841782dc155d4209967a2033e3&dn=EhViewer-2.0.0.1.apk&xl=23252182
-
-
-
-## 2025/08/01 : 
-### 新版发布1.9.9.17
-
-- 修复了自定义host不生效的问题
-- 修复了由画廊名称中的"/"字符引起的档案下载路径不正常的问题
-- 删除左侧栏多余的每分钟愿力信息
-
-[//]: # (- [Appteka]&#40;https://appteka.store/app/acdr168648&#41;)
-- [百度云](https://pan.baidu.com/s/1Y1kvi1KDq6_GfJF5yc8XLA) 提取码：cr2b
-- [蓝奏云](https://wwsu.lanzouu.com/isnFy32g5ywd)，电脑端可正常下载 提取码：b8yw
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-- Torrent链接: magnet:?xt=urn:btih:ffc84b0416595dbb44615ac78e19c20a94c09b81&xt=urn:btmh:1220dbfee3d96551598e89fb666c882cf4ce1bc130b4c6acad62a2ffec8f07514076&dn=EhViewer-1.9.9.17.apk&xl=23251522
-
-
-## 2025/07/17 : host更新   
-### 新版发布1.9.9.14
-
-- 紧急更新表站host
-
-[百度云](https://pan.baidu.com/s/1Vlc_g_Qi4N7ZamE-SRBbtg) 提取码：wykk  
-[蓝奏云](https://wwsu.lanzouu.com/ihVy03195d7e)，电脑端可正常下载 提取码：87jv  
-[GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)  
-Torrent链接: magnet:?xt=urn:btih:b59ab1c119efb86acfa27b27124b5660d6478829&xt=urn:btmh:1220505d4be49eed6e78c0325378b10da01cd4dcdc0d657bad75edb8bf39bc28e006&dn=EhViewer-1.9.9.14.apk&xl=23251511
-
-
-
-## 2025/07/01 : bkgs！！
-### 新版发布1.9.9.13
-
-- Update Japanese & fix typo
-- update host
-- 添加了评分显示开关（设置-EH-显示画廊评分）
-- 修改了配额显示文本，现在未解锁单独配额的账号会显示‘ip基础限制’
-- 修复了挂梯子时登录APP导致崩溃的问题
-
-[//]: # (- [Appteka]&#40;https://appteka.store/app/acdr168648&#41;)
-[百度云](https://pan.baidu.com/s/1_KGrPsuLkXGnSQdxcCn5yA) 提取码：mm56  
-[蓝奏云](https://wwsu.lanzouu.com/i4W6U301y3gd) 提取码：9qjm  
-[GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)  
-Torrent链接: magnet:?xt=urn:btih:2a886cc0d6355dbe72e06fa4814ba32f383cc7a8&xt=urn:btmh:122042d5ba6460d3f60b04c975b01e994d748ab69091aa220ac17c3f1cee6d205672&dn=EhViewer-1.9.9.13.apk&xl=23251526  
-
-
-
-## 2025/06/01 : 祝大家六一儿童节快乐~
-### 新版发布1.9.9.12
-
-- 适配了裸连状态下的网页登录功能  
-[百度云](https://pan.baidu.com/s/1LPi9G8CLakBt3Ruzv3_a4Q?pwd=br2j) 提取码：br2j  
-[蓝奏云](https://wwsu.lanzouu.com/iMWwX2xostbi) 提取码：axex  
-[GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)  
-Torrent链接: magnet:?xt=urn:btih:4d10ec4b0eb9f9c1f65a5e7617ab37f43a6f03f4&xt=urn:btmh:122033484646d900c4894fc026daddb1c032387ad184593ae7b8d448758b1346ff5b&dn=EhViewer-1.9.9.12.apk&xl=23244510
-  
-## 2025/05/04 : 祝大家54青年节快乐~ 
-### 新版发布1.9.9.11
-[百度云](https://pan.baidu.com/s/1Ur2ES2j41-udZ779JqYxkA?pwd=ucki) 提取码：ucki
-[蓝奏云](https://wwsu.lanzouu.com/iiODe2vbjvaf) 提取码：gmbc
-[GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-- 种子下载成功后路径显示由单行显示改为多行显示 
-- 下载成功的种子在重复下载时会直接跳转到成功弹窗
-- 更新内置host
-- 为书签栏和订阅栏添加了一个动画组件，来表示可通过点击切换，以降低用户学习成本
-- 由于微软APP center即将停止运营，检查更新更改为，从Github获取更新信息，然后跳转到Github，由用户自行下载更新
-
-## 2025/04/01 :
-### 新版发布1.9.9.10
-
-- 修复了因未开启硬件加速，导致头像渲染失败，从而导致APP崩溃的问题
-- 修复了一些可能导致崩溃的问题
-- gradle版本更新
-
-[Appteka](https://appteka.store/app/acdr168648)
-[百度云](https://pan.baidu.com/s/1myf_N-8l3IL4cuF_38u_dw) 提取码：3ftd
-[蓝奏云](https://wwsu.lanzouu.com/iItRt2scxc0d) 提取码：7yxi
-[GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-Torrent链接: magnet:?xt=urn:btih:09b095aba750ad6d5ffc3a030d3901d098b61591&xt=urn:btmh:122029ddcece960b2b8638a7ffcd3384cd3f5e41cd4d9929203074900408d555101c&dn=EhViewer-1.9.9.10.apk
-
-
-## 2025/03/01 : 
-### 新版发布1.9.9.9
-
-- 修复原图浏览时解析部分大图显示不全的问题
-- 动图优化
-- 修复收藏列表排序按钮现实场景出错的问题
-- 为收藏列表添加了全选功能
-- [Appteka](https://appteka.store/app/d52r213275)
-- [百度云](https://pan.baidu.com/s/1AFJ-ZMx7sjg8GArG5GuawQ) 提取码：8jik
-- [蓝奏云](https://wwsu.lanzouu.com/iXlQc2p6sx2h) 提取码：3bq2
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-- Torrent链接: magnet:?xt=urn:btih:c92339cb043af989dad4c464d47552b43119f9e2&xt=urn:btmh:1220e2fa66581a3120b3f7c0b874a044f264f85630181f210f7ac0753ce72052491d&dn=EhViewer-1.9.9.9.apk
-
-
-## 2025/01/25 : 提前祝大家春节快乐
-### 新版发布1.9.9.8
-
-- 在标签长按弹窗中添加订阅和排除功能
-- 由于微软APP center即将停止运营，检查更新更改为，从Github获取更新信息，然后跳转到Github，由用户自行下载更新
-- clean up androidTest
-- 删除了所有和APP center相关的代码，这是最后一版自动更新的版本
-
-- [Appteka](https://appteka.store/app/11dr207588)
-- [Microsoft App Center](https://install.appcenter.ms/users/xiaojieonly/apps/com.xjs.ehviewer/distribution_groups/let's%20roll)
-- [百度云](https://pan.baidu.com/s/1bD8CNdtUf1UqyMWMhLidkQ) 提取码：r9pm
-- [蓝奏云](https://wwsu.lanzouu.com/iGQw12ly703i) 密码:7b4s
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-
-## 2025/01/01 : 祝大家在2025年，身体健康，万事如意，长生不老，永远不死，打胶30分钟以上，越打越持久~  
-### 新版发布1.9.9.7
-
-- 为设置主页添加分割线  
-- 修复设置页面切换主题时app奔溃的问题  
-- 修复浏览画廊时全屏模式无法关闭的问题  
-- gradle plugin更新  
-- 删除锁定Cookie igneous功能，此功能已不适用于当前E站账号政策  
-- 优化退出登录，现在退出登录会自动回到登录页  
-- 修复‘配额’视图在特殊情况下无法正确显示的问题  
-
-- [Appteka](https://appteka.store/app/9b1r203934)
-- [Microsoft App Center](https://install.appcenter.ms/users/xiaojieonly/apps/com.xjs.ehviewer/distribution_groups/let's%20roll)
-- [百度云](https://pan.baidu.com/s/1GV7ltodLNyZwxKulmi5laQ) 密码:vt1y
-- [蓝奏云](https://wwsu.lanzouu.com/iOHZV2jlhjuj) 密码:4inm
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
-- Torrent链接: magnet:?xt=urn:btih:e35ff0f430a28d4b72aac752dbca8fc35589f8fe&xt=urn:btmh:12202d5b6eafc1cbac6f729b4f9e6370b7274679447fa38746e8b295d58bc4dad7a6&dn=EhViewer-1.9.9.7.apk
-
-## 2025/01/01 : 祝大家元旦快乐~
-
-- [2024年更新日志-感谢大家的支持](feedauthor/year2024-thanks.md)  
-- [2023年更新日志-时间过的好快](feedauthor/year2023-boom.md)  
-- [2022年更新日志-成长](feedauthor/year2022-growing-up.md)  
-- [2021年更新日志-艰难起步](feedauthor/year2021-step-begin.md)  
-- [2020年更新日志-爱与痛的开始](feedauthor/year2020-love-begin.md)
-
-
-# Screenshot
-
-![screenshot-01](fastlane/metadata/android/en-US/images/phoneScreenshots/1.png)
-
-
-# Build
-
-Windows
-
-    > git clone https://github.com/xiaojieonly/Ehviewer_CN_SXJ.git
-    > cd EhViewer
-    > gradlew app:assembleDebug
-
-Linux
-
-    $ git clone https://github.com/xiaojieonly/Ehviewer_CN_SXJ.git
-    $ cd EhViewer
-    $ ./gradlew app:assembleDebug
-
-生成的 apk 文件在 app\build\outputs\apk 目录下
-
-The apk is in app\build\outputs\apk
-
-# Thanks
-
-## [感谢名单](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/feedauthor/thankyou.md) 
-
-感谢Ehviewer奠基人[Hippo/seven332](https://github.com/seven332)    
-Thanks to [Hippo/seven332](https://github.com/seven332), the founder of Ehviewer    
-
-本项目受到了诸多开源项目的帮助  
-This project has received help from many open source projects  
-
-这是部分库
-Here is the libraries  
-- [AOSP](http://source.android.com/)
-- [android-advancedrecyclerview](https://github.com/h6ah4i/android-advancedrecyclerview)
-- [Apache Commons Lang](https://commons.apache.org/proper/commons-lang/)
-- [apng](http://apng.sourceforge.net/)
-- [giflib](http://giflib.sourceforge.net)
-- [greenDAO](https://github.com/greenrobot/greenDAO)
-- [jsoup](https://github.com/jhy/jsoup)
-- [libjpeg-turbo](http://libjpeg-turbo.virtualgl.org/)
-- [libpng](http://www.libpng.org/pub/png/libpng.html)
-- [okhttp](https://github.com/square/okhttp)
-- [roaster](https://github.com/forge/roaster)
-- [ShowcaseView](https://github.com/amlcurran/ShowcaseView)
-- [Slabo](https://github.com/TiroTypeworks/Slabo)
-- [TagSoup](http://home.ccil.org/~cowan/tagsoup/)
-
-## DeepWiki  [<img src="https://devin.ai/assets/deepwiki-badge.png" alt="Ask DeepWiki.com" height="20"/>](https://deepwiki.com/xiaojieonly/Ehviewer_CN_SXJ)
-## 状态
-
-[![Alt](https://repobeats.axiom.co/api/embed/e6becb5b041dae430dff7f85581aa1f91975d416.svg "Repobeats analytics image")](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/pulse)
+- 以上功能与接口均可能调整，不保证长期兼容与可用。
+- 本项目不承诺问题修复或用户支持，请谨慎评估并自行建设所需基础设施。
