@@ -75,6 +75,7 @@ public class GalleryListParser {
         public String prevHref;
         public String nextHref;
         public String lastHref;
+        public String customErrorString;
         public boolean noWatchedTags;
         public List<GalleryInfo> galleryInfoList = new ArrayList<>();
     }
@@ -94,7 +95,7 @@ public class GalleryListParser {
         try {
             d = Jsoup.parse(body);
             return parse(d, body, mode);
-        } catch (Exception ignored) {
+        } catch (Throwable ignored) {
             return new Result();
         }
     }

@@ -112,6 +112,7 @@
     <string name="error_please_login_first">ログインをしてください</string>
     <string name="error_empty_html">空のページ</string>
     <string name="error_cant_get_image">画像を取得できませんでした</string>
+    <string name="error_igneous_wrong">igneousが間違っています\n権限を確認して再ログインしてください</string>
     <string name="kokomade_tip">設定 -&gt; Eh -&gt; ギャラリーサイト -&gt; E-Hentai</string>
     <string name="app_waring">このアプリの内容はインターネットから取得したものです。その内容の一部は使用者のお体や心理に傷つける恐れがあります。それでも続行しますか？</string>
     <string name="error_username_cannot_empty">ユーザー名を入力してください。</string>
@@ -369,6 +370,8 @@
     <string name="sort_by_rating_desc">評価の降順</string>
     <string name="sort_by_name_asc">名前の昇順</string>
     <string name="sort_by_name_desc">名前の降順</string>
+    <string name="sort_by_file_size_asc">ファイルサイズの昇順</string>
+    <string name="sort_by_file_size_desc">ファイルサイズの降順</string>
     <string name="sort_download_list">リストを並べ替え</string>
     <string name="download_start_all">すべて開始</string>
     <string name="download_stop_all">すべて停止</string>
@@ -876,6 +879,7 @@
     <!-- S-Pen Actions(Samsung only) -->
     <string name="spen_previous_page">前のページ</string>
     <string name="spen_next_page">次のページ</string>
+    <string name="category_all">すべて</string>
     <string name="import_local_archive">ローカルアーカイブをインポート</string>
     <string name="import_archive_title">アーカイブファイルを選択</string>
     <string name="import_archive_failed">アーカイブのインポートに失敗しました</string>

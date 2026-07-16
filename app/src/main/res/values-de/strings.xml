@@ -107,6 +107,7 @@
     <string name="error_invalid_number">Nummer ungültig</string>
     <string name="error_empty_html">Leere Seite</string>
     <string name="error_cant_get_image">Bild konnte nicht abgerufen werden</string>
+    <string name="error_igneous_wrong">Falsches igneous\nStellen Sie sicher, dass Sie die Berechtigung haben und melden Sie sich erneut an</string>
     <string name="error_please_login_first">Melde dich zuerst an.</string>
     <string name="kokomade_tip">Einstellungen->EH->Galerie-Seite->e-hentai</string>
     <string name="analytics_explain">Darf der Entwickler die Informationen deines Geräts und deiner Nutzung sammeln? Diese Informationen sind für die Entwicklung sehr nützlich.&lt;br&gt;&lt;br&gt;Daten-Analyse ist von Google Analytics for Firebase zur Verfügung gestellt, dessen Datenschutz-Bestimmungen auf &lt;a href=&quot;https://www.google.com/policies/privacy/&quot;&gt;https://www.google.com/policies/privacy/&lt;/a&gt;verfügbar sind.&lt;br&gt;&lt;br&gt;Wenn du die Daten-Analyse teilnimmst, werden Informationen deines Geräts und deiner Nutzung, z. B. die Android API-Version, das Gerätsmodell, die Sprache, die App-Version, die Sessionszeit, gesammelt. Der Entwickler verspricht, dass private Informationen wie deine Telefonnummer, deine E-Mail-Adresse, die IMEI usw., gesammelt nicht werden.&lt;br&gt;&lt;br&gt;Falls du die Daten-Analyse nicht teilnimmst, wird keine Information gesammelt.&lt;br&gt;&lt;br&gt;Die gesammelten Informationen werden von Google Analytics for Firebase analysiert. Nur der Entwickler kann auf den Analyse-Bericht zugreifen.</string>
@@ -322,6 +323,8 @@
     <string name="sort_by_rating_desc">Nach Bewertung absteigend</string>
     <string name="sort_by_name_asc">Nach Name aufsteigend</string>
     <string name="sort_by_name_desc">Nach Name absteigend</string>
+    <string name="sort_by_file_size_asc">Nach Dateigröße aufsteigend</string>
+    <string name="sort_by_file_size_desc">Nach Dateigröße absteigend</string>
     <string name="sort_download_list">Liste sortieren</string>
     <string name="download_search_gallery">Galerie suchen</string>
     <string name="download_search_hint">Suchschlüssel eingeben</string>
@@ -806,6 +809,7 @@
     <!-- S-Pen Actions(Samsung only) -->
     <string name="spen_previous_page">Vorherige Seite</string>
     <string name="spen_next_page">Nächste Seite</string>
+    <string name="category_all">Alle</string>
 
     <!--  排行榜  -->
     <string name="gallery_toplists">Galerie Die Charts.</string>

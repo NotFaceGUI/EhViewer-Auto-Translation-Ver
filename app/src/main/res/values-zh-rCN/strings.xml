@@ -112,6 +112,7 @@
     <string name="error_please_login_first">请先登陆</string>
     <string name="error_empty_html">页面内容为空</string>
     <string name="error_cant_get_image">无法获取图片</string>
+    <string name="error_igneous_wrong">错误的igneous\n检查账号里站权限后重新登录</string>
 
     <string name="kokomade_tip">设置->Eh->画廊站点->e-hentai</string>
 
@@ -378,6 +379,7 @@
     <string name="download_labels">下载标签</string>
     <string name="download_sort_list">排序</string>
     <string name="download_filter_by_status">根据状态过滤</string>
+    <string name="download_filter_by_kind">根据类型过滤</string>
     <string name="download_status_all">全部</string>
     <string name="sort_download_list">对内容排序</string>
     <string name="default_sort">默认</string>
@@ -389,6 +391,8 @@
     <string name="sort_by_rating_desc">按评分降序</string>
     <string name="sort_by_name_asc">按名称升序</string>
     <string name="sort_by_name_desc">按名称降序</string>
+    <string name="sort_by_file_size_asc">按文件大小升序</string>
+    <string name="sort_by_file_size_desc">按文件大小降序</string>
     <string name="download_start_all">全部开始</string>
     <string name="download_stop_all">全部停止</string>
     <string name="download_reset_reading_progress">重置阅读进度</string>
@@ -613,6 +617,8 @@
     <string name="settings_download_clean_redundancy_summary">清理下载目录中不在下载列表里的图片文件</string>
     <string name="settings_download_clean_redundancy_no_redundancy">未发现冗余</string>
     <string name="settings_download_clean_redundancy_done">完成冗余清理，共清理 %d 项</string>
+    <string name="settings_download_clean_invalid_download_summary">清空任何无效的下载项，尤其是下载未完整的下载项，不会清空已完成的下载项</string>
+    <string name="settings_download_clean_invalid_download">清空无效的下载项</string>
 
     <string name="settings_advanced">高级</string>
     <string name="settings_advanced_save_parse_error_body">解析失败时保存页面内容</string>
@@ -945,7 +951,7 @@
     <string name="cookie_in_clipboard_incorrect">Cookie格式不正确</string>
     <string name="settings_download_timeout">下载超时时间</string>
     <string name="download_timeout_unlimited">无上限</string>
-    <string name="settings_download_timeout_summary">%s(S),下载一张图片的最大可用时长。</string>
+    <string name="settings_download_timeout_summary">%s 秒，下载一张图片的最大可用时长。</string>
     <string name="have_new_version">点击查看新的画廊版本</string>
     <string name="archiver_downloading">档案下载中 %s</string>
     <string name="order">排序</string>
@@ -953,10 +959,13 @@
     <string name="sort_by_fav_time">按收藏时间</string>
     <string name="settings_eh_sign_out_restart">正在为您自动重启，请稍候</string>
     <string name="settings_eh_theme_auto_switch">深色跟随系统</string>
+    <string name="settings_eh_system_theme">系统主题</string>
 
     <!-- S-Pen Actions(Samsung only) -->
     <string name="spen_previous_page">上一页</string>
     <string name="spen_next_page">下一页</string>
+    <string name="category_all">全部</string>
+
     <string name="import_local_archive">导入本地压缩包</string>
     <string name="import_archive_title">选择压缩包文件</string>
     <string name="import_archive_failed">压缩包导入失败</string>
