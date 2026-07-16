@@ -355,7 +355,7 @@ public class EhTagDatabase {
             instance = null;
         }
 
-        IoThreadPoolExecutor.getInstance().execute(() -> {
+        IoThreadPoolExecutor.Companion.getInstance().execute(() -> {
             if (!lock.tryLock()) {
                 return;
             }
@@ -451,5 +451,8 @@ public class EhTagDatabase {
         }
 
         return searchList;
+    }
+    public List<Tag> getTagList() {
+        return tagList;
     }
 }

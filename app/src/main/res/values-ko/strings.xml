@@ -126,6 +126,10 @@
     <string name="error_empty_html">페이지 내용이 비어있음</string>
     <string name="error_cant_get_image">이미지를 가져올 수 없음</string>
     <string name="error_igneous_wrong">잘못된 igneous\n권한을 확인하고 다시 로그인하세요</string>
+    <string name="gallery_gl_fallback_title">OpenGL 렌더러를 사용할 수 없습니다</string>
+    <string name="gallery_gl_fallback_message">이 기기에서는 현재 EGL을 초기화할 수 없습니다. 뒤로 돌아간 뒤 잠시 후 다시 시도하세요.</string>
+    <string name="gallery_gl_fallback_action_close">뒤로</string>
+    <string name="gallery_gl_fallback_toast">GL 렌더링에 실패하여 안전한 대체 페이지로 전환했습니다</string>
 
     <string name="kokomade_tip">설정->EH->갤러리 사이트->e-hentai</string>
 
@@ -365,6 +369,11 @@
     <string name="gallery_previews">갤러리 미리 보기</string>
     <string name="go_to">이동</string>
     <string name="tag_filter">태그 필터링</string>
+    <string name="tag_selector_search_hint">태그 검색…</string>
+    <string name="tag_selector_selected_count">선택됨: %d</string>
+    <string name="tag_selector_selected_section_title">선택한 태그</string>
+    <string name="tag_selector_empty_selected">선택한 태그 없음</string>
+    <string name="tag_selector_other_group">기타</string>
 
     <!-- Download -->
     <string name="scene_download_title">%s 갤러리 - %s</string>
@@ -611,6 +620,8 @@
     <string name="settings_download_download_origin_image_summary">이 옵션은 위험합니다! 509 오류가 발생할 수 있습니다.</string>
     <string name="settings_download_download_order_by_asc">오름차순으로 다운로드</string>
     <string name="settings_download_download_order_by_asc_summary">모든 갤러리를 다운로드할 때 순서대로 다운로드</string>
+    <string name="settings_download_sync_while_reading">읽기 중 동기화 다운로드</string>
+    <string name="settings_download_sync_while_reading_summary">다운로드하지 않은 갤러리를 탐색할 때 보는 이미지를 자동으로 다운로드 디렉터리에 저장합니다</string>
     <string name="settings_download_media_scan">미디어 스캔 허용</string>
     <string name="settings_download_media_scan_summary_on">다른 사람들에게 갤러리 앱을 들키지 마세요.</string>
     <string name="settings_download_media_scan_summary_off">대부분의 갤러리 앱에서 다운로드 경로에 있는 사진을 무시합니다.</string>
@@ -662,6 +673,14 @@
     <string name="settings_advanced_wifi_sander_summary">Wi-Fi 핫스팟을 통한 데이터 마이그레이션</string>
     <string name="settings_advanced_wifi_client">WiFi 마이그레이션 데이터 수신</string>
     <string name="settings_advanced_wifi_client_summary">Wi-Fi 핫스팟에서 마이그레이션 데이터 수신</string>
+    <string name="wifi_send_download_location">다운로드 디렉터리 마이그레이션</string>
+    <string name="wifi_download_dir_empty">마이그레이션 가능한 갤러리 폴더를 찾을 수 없습니다</string>
+    <string name="wifi_download_dir_no_location">이 기기에 다운로드 디렉터리가 설정되어 있지 않습니다</string>
+    <string name="wifi_download_dir_migrating">%1$s 마이그레이션 중 (%2$d/%3$d개 파일)</string>
+    <string name="wifi_download_dir_manifest_received">%1$s (%2$d/%3$d): 건너뜀 %4$d, 전송 %5$d</string>
+    <string name="wifi_download_dir_file_done">파일 수신: %s</string>
+    <string name="wifi_download_dir_files_progress">%d개 파일 수신됨</string>
+    <string name="wifi_download_dir_file_failed">파일 체크섬 검증 실패, 폐기됨</string>
 
     <string name="settings_about">앱 정보</string>
     <string name="settings_about_declaration" translatable="false">EhViewer</string>

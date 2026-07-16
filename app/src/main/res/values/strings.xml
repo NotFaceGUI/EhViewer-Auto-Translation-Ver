@@ -113,6 +113,8 @@
     <string name="register">Register</string>
     <string name="sign_in_via_webview">Sign in via WebView</string>
     <string name="sign_in_via_cookies">Sign in via cookies</string>
+    <string name="webview_unavailable_title">System WebView unavailable</string>
+    <string name="webview_unavailable_message">The system Android System WebView failed to load (it may be broken or mismatched). Try updating \"Android System WebView\" in the app store, switch the WebView implementation in Developer options, or sign in via cookies.</string>
     <string name="display_name_dialog_title">Enter Display Name</string>
     <string name="display_name">Display name</string>
     <string name="display_name_is_empty">Display name is empty</string>
@@ -193,6 +195,10 @@
     <string name="error_empty_html">Empty page</string>
     <string name="error_cant_get_image">Can\'t get image</string>
     <string name="error_igneous_wrong">Wrong igneous\nmake sure you have permission and re-login</string>
+    <string name="gallery_gl_fallback_title">OpenGL renderer unavailable</string>
+    <string name="gallery_gl_fallback_message">This device cannot initialize EGL right now. Please return and try again later.</string>
+    <string name="gallery_gl_fallback_action_close">Back</string>
+    <string name="gallery_gl_fallback_toast">GL rendering failed, switched to safe fallback page</string>
 
     <string name="kokomade_tip">Settings->Eh->Gallery Site->e-hentai</string>
 
@@ -434,9 +440,15 @@
     <string name="gallery_previews">Gallery Previews</string>
     <string name="go_to">Go to</string>
     <string name="tag_filter">Filter tag</string>
+    <string name="tag_selector_search_hint">Search tags…</string>
+    <string name="tag_selector_selected_count">Selected: %d</string>
+    <string name="tag_selector_selected_section_title">Selected tags</string>
+    <string name="tag_selector_empty_selected">No tags selected</string>
+    <string name="tag_selector_other_group">Other</string>
 
     <!-- Download -->
     <string name="scene_download_title">%s Galleries - %s</string>
+    <string name="scene_download_title_new">%s(%s)</string>
     <string name="no_download_info">Download items will be shown here</string>
     <string name="download_state_none">Idle</string>
     <string name="download_state_wait">Waiting</string>
@@ -579,8 +591,8 @@
     <string name="settings_eh_sign_out_tip">You have signed out. Restart the application to sign in again</string>
     <string name="settings_eh_identity_cookies">Identity cookies</string>
     <string name="settings_eh_identity_cookies_summary">Cookies can be used to sign in</string>
-<!--    <string name="settings_eh_lock_cookies_igneous">Lock the Cookie igneous field</string>-->
-<!--    <string name="settings_eh_lock_cookies_igneous_summary">It is not recommended to enable it except in special circumstances.</string>-->
+    <!--    <string name="settings_eh_lock_cookies_igneous">Lock the Cookie igneous field</string>-->
+    <!--    <string name="settings_eh_lock_cookies_igneous_summary">It is not recommended to enable it except in special circumstances.</string>-->
     <string name="settings_eh_identity_cookies_signed">Identity cookies can be used to sign in to this account.&lt;br&gt;&lt;b&gt;KEEP IT SAFE&lt;/b&gt;&lt;br&gt;&lt;br&gt;%s</string>
     <string name="settings_eh_identity_cookies_tourist">Not signed in.</string>
     <string name="settings_eh_identity_cookies_copy">Copy</string>
@@ -632,6 +644,9 @@
     <string name="settings_eh_cellular_network_warning">Cellular network warning</string>
 
     <string name="settings_read">Read</string>
+    <string name="settings_read_picture_decoding_method">Picture decoding method</string>
+    <string name="settings_read_picture_decoding_method_origin">System Decoding</string>
+    <string name="settings_read_picture_decoding_method_native">Open source C++ decoding library</string>
     <string name="settings_read_screen_rotation">Screen orientation</string>
     <string name="settings_read_screen_rotation_default">Default</string>
     <string name="settings_read_screen_rotation_portrait">Portrait</string>
@@ -690,6 +705,8 @@
     <string name="settings_download_download_origin_image_summary">It is dangerous! You may get 509 error</string>
     <string name="settings_download_download_order_by_asc">Download order by asc</string>
     <string name="settings_download_download_order_by_asc_summary">Download in sequence when downloading all galleries</string>
+    <string name="settings_download_sync_while_reading">Sync download while reading</string>
+    <string name="settings_download_sync_while_reading_summary">When browsing an undownloaded gallery, automatically save viewed images to the download directory</string>
     <string name="settings_download_restore_download_items">Restore download items</string>
     <string name="settings_download_restore_download_items_summary">Restore all download items in download location</string>
     <string name="settings_download_restoring">Restoring</string>
@@ -972,6 +989,14 @@
     <string name="wifi_send_bookmark">Migrate bookmarks</string>
     <string name="wifi_send_favorite">Migrate favorite</string>
     <string name="wifi_send_download">Migrate download data</string>
+    <string name="wifi_send_download_location">Migrate download directory</string>
+    <string name="wifi_download_dir_empty">No downloadable gallery folders found</string>
+    <string name="wifi_download_dir_no_location">Download directory is not set on this device</string>
+    <string name="wifi_download_dir_migrating">Migrating %1$s (%2$d/%3$d files)</string>
+    <string name="wifi_download_dir_manifest_received">%1$s (%2$d/%3$d): skip %4$d, transfer %5$d</string>
+    <string name="wifi_download_dir_file_done">File received: %s</string>
+    <string name="wifi_download_dir_files_progress">Received %d files</string>
+    <string name="wifi_download_dir_file_failed">File checksum failed, discarded</string>
     <string name="wifi_send_done">Migrate data done</string>
     <string name="wifi_send_start">Start Migrate%s</string>
     <string name="wifi_send_stop">Stop Migrate%s</string>
@@ -1061,7 +1086,6 @@
     <string name="imported_archive_info_title">Local Import Info</string>
     <string name="imported_archive_info_message">This is an item imported from local storage</string>
     <string name="imported_archive_category">Local Import</string>
-
     <string name="gemini_base_url">API Base URL</string>
     <string name="gemini_model_select">Model</string>
     <string name="gemini_model_custom">Custom Model</string>
@@ -1069,4 +1093,7 @@
     <string name="gemini_common_prompt">Prompt</string>
     <string name="gemini_api_key">API Key</string>
     <string name="settings_translation">Translation Settings</string>
+
+    <!-- TagSelectActivity -->
+    <string name="tag_search_entrance">Tag Selector</string>
 </resources>

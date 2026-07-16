@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hippo.ehviewer.ui.scene;
+package com.hippo.ehviewer.ui.scene.sign;
 
 import android.content.Context;
 import android.graphics.Paint;
@@ -41,8 +41,11 @@ import com.hippo.ehviewer.client.EhUrl;
 import com.hippo.ehviewer.client.EhUtils;
 import com.hippo.ehviewer.client.parser.ProfileParser;
 import com.hippo.ehviewer.ui.MainActivity;
+import com.hippo.ehviewer.ui.scene.EhCallback;
+import com.hippo.ehviewer.ui.scene.SolidScene;
 import com.hippo.scene.Announcer;
 import com.hippo.scene.SceneFragment;
+import com.hippo.util.AppHelper;
 import com.hippo.util.ExceptionUtils;
 import com.hippo.lib.yorozuya.AssertUtils;
 import com.hippo.lib.yorozuya.IntIdGenerator;
@@ -55,6 +58,9 @@ public final class SignInScene extends SolidScene implements EditText.OnEditorAc
 
     private static final int REQUEST_CODE_WEBVIEW = 0;
     private static final int REQUEST_CODE_COOKIE = 0;
+    public static final int REQUEST_CODE_PROFILE = 0x000F;
+    public static final String DISPLAY_NAME = "displayName";
+    public static final String AVATAR = "avatar";
 
     /*---------------
      View life cycle
@@ -207,9 +213,25 @@ public final class SignInScene extends SolidScene implements EditText.OnEditorAc
             if (RESULT_OK == resultCode) {
                 getProfile();
             }
+        } else if (requestCode == REQUEST_CODE_PROFILE) {
+            if (data != null) {
+                getProfileSuccess(data);
+            } else {
+                // 用户取消或获取资料失败，结束登录流程并隐藏进度
+                mSigningIn = false;
+                hideProgress();
+            }
         } else {
             super.onSceneResult(requestCode, resultCode, data);
         }
+    }
+
+    private void getProfileSuccess(Bundle data) {
+        String name = data.getString(DISPLAY_NAME,"");
+        String avatar = data.getString(AVATAR,"");
+        Settings.putDisplayName(name);
+        Settings.putAvatar(avatar);
+        onGetProfileEnd();
     }
 
     @Override
@@ -299,17 +321,25 @@ public final class SignInScene extends SolidScene implements EditText.OnEditorAc
         if (null == context || null == activity) {
             return;
         }
+        if (Settings.getDF()&& AppHelper.checkVPN(context)){
+            Bundle data = new Bundle();
+            data.putString(DISPLAY_NAME, getString(R.string.default_display_name));
+            data.putString(AVATAR, "");
+            getProfileSuccess(data);
+            return;
+        }
+        startScene(new Announcer(GetProfileScene.class).setRequestCode(this, REQUEST_CODE_PROFILE));
 
-        hideSoftInput();
-        showProgress(true);
-
-        EhCallback callback = new GetProfileListener(context,
-                activity.getStageId(), getTag());
-        mRequestId = ((EhApplication) context.getApplicationContext()).putGlobalStuff(callback);
-        EhRequest request = new EhRequest()
-                .setMethod(EhClient.METHOD_GET_PROFILE)
-                .setCallback(callback);
-        EhApplication.getEhClient(context).execute(request);
+//        hideSoftInput();
+//        showProgress(true);
+//
+//        EhCallback callback = new GetProfileListener(context,
+//                activity.getStageId(), getTag());
+//        mRequestId = ((EhApplication) context.getApplicationContext()).putGlobalStuff(callback);
+//        EhRequest request = new EhRequest()
+//                .setMethod(EhClient.METHOD_GET_PROFILE)
+//                .setCallback(callback);
+//        EhApplication.getEhClient(context).execute(request);
     }
 
     private void redirectTo() {

@@ -108,6 +108,10 @@
     <string name="error_empty_html">Leere Seite</string>
     <string name="error_cant_get_image">Bild konnte nicht abgerufen werden</string>
     <string name="error_igneous_wrong">Falsches igneous\nStellen Sie sicher, dass Sie die Berechtigung haben und melden Sie sich erneut an</string>
+    <string name="gallery_gl_fallback_title">OpenGL-Renderer nicht verfügbar</string>
+    <string name="gallery_gl_fallback_message">Dieses Gerät kann EGL derzeit nicht initialisieren. Bitte gehen Sie zurück und versuchen Sie es später erneut.</string>
+    <string name="gallery_gl_fallback_action_close">Zurück</string>
+    <string name="gallery_gl_fallback_toast">GL-Rendering fehlgeschlagen, auf sichere Ersatzseite umgeschaltet</string>
     <string name="error_please_login_first">Melde dich zuerst an.</string>
     <string name="kokomade_tip">Einstellungen->EH->Galerie-Seite->e-hentai</string>
     <string name="analytics_explain">Darf der Entwickler die Informationen deines Geräts und deiner Nutzung sammeln? Diese Informationen sind für die Entwicklung sehr nützlich.&lt;br&gt;&lt;br&gt;Daten-Analyse ist von Google Analytics for Firebase zur Verfügung gestellt, dessen Datenschutz-Bestimmungen auf &lt;a href=&quot;https://www.google.com/policies/privacy/&quot;&gt;https://www.google.com/policies/privacy/&lt;/a&gt;verfügbar sind.&lt;br&gt;&lt;br&gt;Wenn du die Daten-Analyse teilnimmst, werden Informationen deines Geräts und deiner Nutzung, z. B. die Android API-Version, das Gerätsmodell, die Sprache, die App-Version, die Sessionszeit, gesammelt. Der Entwickler verspricht, dass private Informationen wie deine Telefonnummer, deine E-Mail-Adresse, die IMEI usw., gesammelt nicht werden.&lt;br&gt;&lt;br&gt;Falls du die Daten-Analyse nicht teilnimmst, wird keine Information gesammelt.&lt;br&gt;&lt;br&gt;Die gesammelten Informationen werden von Google Analytics for Firebase analysiert. Nur der Entwickler kann auf den Analyse-Bericht zugreifen.</string>
@@ -301,6 +305,11 @@
     <string name="gallery_previews">Vorschauen der Galerie</string>
     <string name="go_to">Gehe zu</string>
     <string name="tag_filter">Etikett filtern</string>
+    <string name="tag_selector_search_hint">Tags durchsuchen…</string>
+    <string name="tag_selector_selected_count">Ausgewählt: %d</string>
+    <string name="tag_selector_selected_section_title">Ausgewählte Tags</string>
+    <string name="tag_selector_empty_selected">Keine Tags ausgewählt</string>
+    <string name="tag_selector_other_group">Sonstige</string>
     <string name="scene_download_title">%s Galleries - %s</string>
     <string name="no_download_info">Downloads werden hier angezeigt</string>
     <string name="download_state_none">Pausiert</string>
@@ -510,6 +519,8 @@
     <string name="settings_download_download_origin_image_summary">Es ist gefährlich! Du könntest einen 509-Fehler bekommen</string>
     <string name="settings_download_download_order_by_asc">Download-Reihenfolge aufsteigend</string>
     <string name="settings_download_download_order_by_asc_summary">Beim Herunterladen aller Galerien in Reihenfolge herunterladen</string>
+    <string name="settings_download_sync_while_reading">Synchron beim Lesen herunterladen</string>
+    <string name="settings_download_sync_while_reading_summary">Beim Durchsuchen einer nicht heruntergeladenen Galerie werden angesehene Bilder automatisch im Download-Verzeichnis gespeichert</string>
     <string name="settings_download_restore_download_items">Download-Elemente wiederherstellen</string>
     <string name="settings_download_restore_download_items_summary">Alle Download-Elemente im Downloadpfad wiederherstellen</string>
     <string name="settings_download_restoring">Elemente werden wiederhergestellt</string>
@@ -768,6 +779,14 @@
     <string name="wifi_send_bookmark">Lesezeichen migrieren</string>
     <string name="wifi_send_favorite">Favoriten migrieren</string>
     <string name="wifi_send_download">Download-Daten migrieren</string>
+    <string name="wifi_send_download_location">Download-Verzeichnis migrieren</string>
+    <string name="wifi_download_dir_empty">Keine migrierbaren Galerie-Ordner gefunden</string>
+    <string name="wifi_download_dir_no_location">Auf diesem Gerät ist kein Download-Verzeichnis festgelegt</string>
+    <string name="wifi_download_dir_migrating">%1$s wird migriert (%2$d/%3$d Dateien)</string>
+    <string name="wifi_download_dir_manifest_received">%1$s (%2$d/%3$d): %4$d übersprungen, %5$d zu übertragen</string>
+    <string name="wifi_download_dir_file_done">Datei empfangen: %s</string>
+    <string name="wifi_download_dir_files_progress">%d Dateien empfangen</string>
+    <string name="wifi_download_dir_file_failed">Dateiprüfsumme fehlgeschlagen, verworfen</string>
     <string name="wifi_send_done">Datenmigration abgeschlossen</string>
     <string name="wifi_send_start">Migration %s starten</string>
     <string name="wifi_send_stop">Migration %s stoppen</string>

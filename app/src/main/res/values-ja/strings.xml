@@ -113,6 +113,10 @@
     <string name="error_empty_html">空のページ</string>
     <string name="error_cant_get_image">画像を取得できませんでした</string>
     <string name="error_igneous_wrong">igneousが間違っています\n権限を確認して再ログインしてください</string>
+    <string name="gallery_gl_fallback_title">OpenGLレンダラーを利用できません</string>
+    <string name="gallery_gl_fallback_message">このデバイスでは現在EGLを初期化できません。戻ってしばらくしてから再試行してください。</string>
+    <string name="gallery_gl_fallback_action_close">戻る</string>
+    <string name="gallery_gl_fallback_toast">GLレンダリングに失敗したため、安全な代替ページに切り替えました</string>
     <string name="kokomade_tip">設定 -&gt; Eh -&gt; ギャラリーサイト -&gt; E-Hentai</string>
     <string name="app_waring">このアプリの内容はインターネットから取得したものです。その内容の一部は使用者のお体や心理に傷つける恐れがあります。それでも続行しますか？</string>
     <string name="error_username_cannot_empty">ユーザー名を入力してください。</string>
@@ -330,6 +334,11 @@
     <string name="gallery_previews">ギャラリーのプレビュー</string>
     <string name="go_to">ページに移動</string>
     <string name="tag_filter">タグをフィルター</string>
+    <string name="tag_selector_search_hint">タグを検索…</string>
+    <string name="tag_selector_selected_count">選択中: %d</string>
+    <string name="tag_selector_selected_section_title">選択中のタグ</string>
+    <string name="tag_selector_empty_selected">タグが選択されていません</string>
+    <string name="tag_selector_other_group">その他</string>
     <!-- Download -->
     <string name="scene_download_title">%sギャラリー - %s</string>
     <string name="no_download_info">ダウンロードタスクはここに表示されます</string>
@@ -566,6 +575,8 @@
     <string name="settings_download_download_origin_image_summary">有効にすると、ダウンロード制限にもっとはやく達する恐れがあります</string>
     <string name="settings_download_download_order_by_asc">昇順でのダウンロードする</string>
     <string name="settings_download_download_order_by_asc_summary">すべてのギャラリーをダウンロードする場合は、順番にダウンロードをします</string>
+    <string name="settings_download_sync_while_reading">閲覧中に同期ダウンロード</string>
+    <string name="settings_download_sync_while_reading_summary">未ダウンロードのギャラリーを閲覧する際、閲覧した画像を自動的にダウンロード先に保存します</string>
     <string name="settings_download_restore_download_items">ダウンロードタスクを復元する</string>
     <string name="settings_download_restore_download_items_summary">ダウンロードディレクトリのダウンロードタスクを復元します</string>
     <string name="settings_download_restoring">復元中</string>
@@ -808,6 +819,14 @@
     <string name="wifi_send_bookmark">ブックマークを移行</string>
     <string name="wifi_send_favorite">お気に入りを移行</string>
     <string name="wifi_send_download">ダウンロードデータを移行</string>
+    <string name="wifi_send_download_location">ダウンロードフォルダを移行</string>
+    <string name="wifi_download_dir_empty">移行可能なギャラリーフォルダが見つかりません</string>
+    <string name="wifi_download_dir_no_location">この端末にダウンロードフォルダが設定されていません</string>
+    <string name="wifi_download_dir_migrating">%1$s を移行中（%2$d/%3$d ファイル）</string>
+    <string name="wifi_download_dir_manifest_received">%1$s（%2$d/%3$d）：スキップ %4$d、転送 %5$d</string>
+    <string name="wifi_download_dir_file_done">ファイルを受信しました：%s</string>
+    <string name="wifi_download_dir_files_progress">%d 個のファイルを受信しました</string>
+    <string name="wifi_download_dir_file_failed">ファイルのチェックサム検証に失敗したため破棄しました</string>
     <string name="wifi_send_done">データの移行が完了しました</string>
     <string name="wifi_send_start">「%s」の移行を開始</string>
     <string name="wifi_send_stop">「%s」の移行を停止</string>

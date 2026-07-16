@@ -1,26 +1,13 @@
-/*
- * Copyright 2016 Hippo Seven
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package com.hippo.ehviewer.ui.scene
+package com.hippo.ehviewer.ui.scene.sign
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.webkit.CookieManager
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -31,13 +18,14 @@ import com.acsbendi.requestinspectorwebview.WebViewRequest
 import com.acsbendi.requestinspectorwebview.WebViewRequestType
 import com.hippo.ehviewer.Analytics
 import com.hippo.ehviewer.EhApplication
-import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhCookieStore
 import com.hippo.ehviewer.client.EhRequestBuilder
 import com.hippo.ehviewer.client.EhUrl
 import com.hippo.ehviewer.client.EhUtils
+import com.hippo.ehviewer.R
+import com.hippo.ehviewer.ui.scene.SolidScene
+import androidx.appcompat.app.AlertDialog
 import com.hippo.lib.yorozuya.AssertUtils
-import com.hippo.util.AppHelper
 import okhttp3.Cookie
 import okhttp3.FormBody
 import okhttp3.HttpUrl
@@ -45,11 +33,16 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
+import kotlin.collections.iterator
 
 class WebViewSignInScene : SolidScene() {
     /*---------------
          View life cycle
          ---------------*/
+    companion object {
+        private const val TAG = "WebViewSignInScene"
+    }
+
     private var mWebView: WebView? = null
     private var okHttpClient: OkHttpClient? = null
 
@@ -71,27 +64,34 @@ class WebViewSignInScene : SolidScene() {
         }
         EhUtils.signOut(context!!)
 
-        // http://stackoverflow.com/questions/32284642/how-to-handle-an-uncatched-exception
-        val cookieManager = CookieManager.getInstance()
-        cookieManager.flush()
-        cookieManager.removeAllCookies(null)
-        cookieManager.removeSessionCookies(null)
-        CookieManager.getInstance().setAcceptCookie(true)
-        CookieManager.setAcceptFileSchemeCookies(true)
+        return try {
+            // http://stackoverflow.com/questions/32284642/how-to-handle-an-uncatched-exception
+            val cookieManager = CookieManager.getInstance()
+            cookieManager.flush()
+            cookieManager.removeAllCookies(null)
+            cookieManager.removeSessionCookies(null)
+            CookieManager.getInstance().setAcceptCookie(true)
+            CookieManager.setAcceptFileSchemeCookies(true)
 
-        mWebView = WebView(context)
-        val webSettings = mWebView!!.settings
-        webSettings.javaScriptEnabled = true
-        if (Settings.getDF()&&AppHelper.checkVPN(context)){
-            mWebView!!.webViewClient = LoginWebViewClientSNI(mWebView!!)
-        }else{
+            mWebView = WebView(context)
+            val webSettings = mWebView!!.settings
+            webSettings.javaScriptEnabled = true
             mWebView!!.webViewClient = LoginWebViewClient()
+            mWebView!!.loadUrl(EhUrl.URL_SIGN_IN)
+            mWebView
+        } catch (t: Throwable) {
+            Log.e(TAG, "WebView/CookieManager init failed", t)
+            val root = FrameLayout(context)
+            root.post {
+                AlertDialog.Builder(context)
+                    .setTitle(R.string.webview_unavailable_title)
+                    .setMessage(R.string.webview_unavailable_message)
+                    .setPositiveButton(android.R.string.ok) { _, _ -> finish() }
+                    .setOnCancelListener { finish() }
+                    .show()
+            }
+            root
         }
-
-        //        mWebView.setWebViewClient(new UConfigActivity.UConfigWebViewClient(webView));
-//        mWebView.setWebChromeClient(new DialogWebChromeClient(this));
-        mWebView!!.loadUrl(EhUrl.URL_SIGN_IN)
-        return mWebView
     }
 
     override fun onDestroyView() {

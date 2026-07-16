@@ -16,7 +16,6 @@
 
 package com.hippo.ehviewer.ui.scene.gallery.detail;
 
-import static com.hippo.ehviewer.client.EhConfig.TORRENT_PATH;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -27,10 +26,8 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Message;
 import android.text.TextUtils;
 import android.util.Pair;
 import android.view.Gravity;
@@ -41,7 +38,6 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -85,31 +81,36 @@ import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.client.data.GalleryTagGroup;
 import com.hippo.ehviewer.client.data.ListUrlBuilder;
 import com.hippo.ehviewer.client.data.PreviewSet;
-import com.hippo.ehviewer.client.data.TorrentDownloadMessage;
 import com.hippo.ehviewer.client.data.userTag.UserTagList;
 import com.hippo.ehviewer.client.exception.NoHAtHClientException;
 import com.hippo.ehviewer.client.parser.RateGalleryParser;
 import com.hippo.ehviewer.dao.DownloadInfo;
 import com.hippo.ehviewer.dao.Filter;
+import com.hippo.ehviewer.spider.SpiderQueen;
 import com.hippo.ehviewer.ui.CommonOperations;
 import com.hippo.ehviewer.ui.GalleryActivity;
 import com.hippo.ehviewer.ui.MainActivity;
 import com.hippo.ehviewer.ui.annotation.WholeLifeCircle;
 import com.hippo.ehviewer.ui.dialog.ArchiverDownloadDialog;
 import com.hippo.ehviewer.ui.scene.BaseScene;
-import com.hippo.ehviewer.ui.scene.download.DownloadsScene;
 import com.hippo.ehviewer.ui.scene.EhCallback;
-import com.hippo.ehviewer.ui.scene.gallery.list.FavoritesScene;
 import com.hippo.ehviewer.ui.scene.GalleryCommentsScene;
 import com.hippo.ehviewer.ui.scene.GalleryInfoScene;
 import com.hippo.ehviewer.ui.scene.GalleryPreviewsScene;
+import com.hippo.ehviewer.ui.scene.TransitionNameFactory;
+import com.hippo.ehviewer.ui.scene.download.DownloadsScene;
+import com.hippo.ehviewer.ui.scene.gallery.list.FavoritesScene;
+import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListScene;
 import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListSceneDialog;
 import com.hippo.ehviewer.ui.scene.history.HistoryScene;
-import com.hippo.ehviewer.ui.scene.TransitionNameFactory;
-import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListScene;
 import com.hippo.ehviewer.util.ClipboardUtil;
 import com.hippo.ehviewer.widget.ArchiverDownloadProgress;
 import com.hippo.ehviewer.widget.GalleryRatingBar;
+import com.hippo.lib.yorozuya.AssertUtils;
+import com.hippo.lib.yorozuya.IOUtils;
+import com.hippo.lib.yorozuya.IntIdGenerator;
+import com.hippo.lib.yorozuya.SimpleHandler;
+import com.hippo.lib.yorozuya.ViewUtils;
 import com.hippo.reveal.ViewAnimationUtils;
 import com.hippo.ripple.Ripple;
 import com.hippo.scene.Announcer;
@@ -118,10 +119,8 @@ import com.hippo.scene.TransitionHelper;
 import com.hippo.text.Html;
 import com.hippo.text.URLImageGetter;
 import com.hippo.util.AppHelper;
-import com.hippo.ehviewer.download.DownloadTorrentManager;
 import com.hippo.util.DrawableManager;
 import com.hippo.util.ExceptionUtils;
-import com.hippo.util.FileUtils;
 import com.hippo.util.ReadableTime;
 import com.hippo.view.ViewTransition;
 import com.hippo.widget.AutoWrapLayout;
@@ -129,13 +128,6 @@ import com.hippo.widget.LoadImageView;
 import com.hippo.widget.ObservedTextView;
 import com.hippo.widget.ProgressView;
 import com.hippo.widget.SimpleGridAutoSpanLayout;
-import com.hippo.lib.yorozuya.AssertUtils;
-import com.hippo.lib.yorozuya.IOUtils;
-import com.hippo.lib.yorozuya.IntIdGenerator;
-import com.hippo.lib.yorozuya.SimpleHandler;
-import com.hippo.lib.yorozuya.ViewUtils;
-
-import com.hippo.ehviewer.spider.SpiderQueen;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -301,7 +293,8 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
     private GalleryDetail mGalleryDetail;
     private int mRequestId = IntIdGenerator.INVALID_ID;
 
-    private Pair<String, String>[] mTorrentList;
+    @Nullable
+    private TorrentDownloadController torrentDownloadController;
 
     private String mArchiveFormParamOr;
     private Pair<String, String>[] mArchiveList;
@@ -314,16 +307,8 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
 
     private boolean mModifingFavorites;
 
-    @Nullable
-    private AlertDialog downLoadAlertDialog;
-    @Nullable
-    private View torrentDownloadView;
-    @Nullable
-    private TextView downloadProgress;
     private GalleryUpdateDialog myUpdateDialog;
     private GalleryListSceneDialog tagDialog;
-    @Nullable
-    private Handler torrentDownloadHandler = null;
 
     private boolean useNetWorkLoadThumb = false;
 
@@ -463,7 +448,22 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             properties.put("Time", dateFormat.format(date));
         }
 
-        torrentDownloadHandler = new TorrentDownloadHandler();
+        torrentDownloadController = new TorrentDownloadController(new TorrentDownloadController.Host() {
+            @Override
+            public @Nullable Context getEHContext() {
+                return GalleryDetailScene.this.getEHContext();
+            }
+
+            @Override
+            public boolean isHostActive() {
+                return isAdded() && getActivity() != null;
+            }
+
+            @Override
+            public void retryTorrentDownload() {
+                showTorrentListDialog();
+            }
+        }, mGid, mToken);
     }
 
     private void onInit() {
@@ -513,8 +513,6 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             mDownloadState = DownloadInfo.STATE_INVALID;
         }
 
-        torrentDownloadView = View.inflate(context, R.layout.notification_contentview, null);
-
         View view = inflater.inflate(R.layout.scene_gallery_detail, container, false);
 
         ViewGroup main = (ViewGroup) ViewUtils.$$(view, R.id.main);
@@ -531,8 +529,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             private void transformPointToViewLocal(int[] point, View child) {
                 ViewParent viewParent = child.getParent();
 
-                while (viewParent instanceof View) {
-                    View view = (View) viewParent;
+                while (viewParent instanceof View view) {
                     point[0] += view.getScrollX() - child.getLeft();
                     point[1] += view.getScrollY() - child.getTop();
 
@@ -641,7 +638,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             mComments.setVisibility(View.GONE);
             mCommentsText.setVisibility(View.GONE);
         }
-        if(!Settings.getShowGalleryRating()){
+        if (!Settings.getShowGalleryRating()) {
             mRating.setVisibility(View.INVISIBLE);
             mRatingText.setVisibility(View.INVISIBLE);
         }
@@ -686,6 +683,15 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        GalleryInfo info = getGalleryInfo();
+        if (info != null && mGalleryDetail != null && mPages != null) {
+            bindReadProgress(info);
+        }
     }
 
     @Override
@@ -753,6 +759,9 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
         mPopupMenu = null;
 
         properties = null;
+        if (torrentDownloadController != null) {
+            torrentDownloadController.release();
+        }
     }
 
     private boolean prepareData() {
@@ -1180,30 +1189,76 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
 
         mGridLayout.removeAllViews();
         PreviewSet previewSet = gd.previewSet;
+
+
+        int columnWidth = resources.getDimensionPixelOffset(Settings.getThumbSizeResId());
+        mGridLayout.setColumnSize(columnWidth);
+        mGridLayout.setStrategy(SimpleGridAutoSpanLayout.STRATEGY_SUITABLE_SIZE);
+
+        // 限制初始显示的预览数量，避免创建过多视图导致滚动卡顿
+        // 只显示前27个预览（约3-4行，每行约6-9个），其余通过点击"查看更多"跳转
+        final int totalSize = previewSet.size();
+//        final int maxDisplayCount = 40; // 限制显示数量
+//        final int displayCount = Math.min(totalSize, maxDisplayCount);
+        final long gid = gd.gid;
+
         if (gd.previewPages <= 0 || previewSet == null || previewSet.size() == 0) {
             mPreviewText.setText(R.string.no_previews);
             return;
-        } else if (gd.previewPages == 1) {
+        } else if (gd.previewPages == 1 ) {
             mPreviewText.setText(R.string.no_more_previews);
         } else {
             mPreviewText.setText(R.string.more_previews);
         }
 
-        int columnWidth = resources.getDimensionPixelOffset(Settings.getThumbSizeResId());
-        mGridLayout.setColumnSize(columnWidth);
-        mGridLayout.setStrategy(SimpleGridAutoSpanLayout.STRATEGY_SUITABLE_SIZE);
-        for (int i = 0, size = previewSet.size(); i < size; i++) {
+        // 只创建限制数量的视图，大幅减少视图数量以提升滚动性能
+        for (int i = 0; i < totalSize; i++) {
             View view = inflater.inflate(R.layout.item_gallery_preview, mGridLayout, false);
-            mGridLayout.addView(view);
-
             LoadImageView image = view.findViewById(R.id.image);
-            previewSet.load(image, gd.gid, i);
             image.setTag(R.id.index, i);
             image.setOnClickListener(this);
             TextView text = view.findViewById(R.id.text);
             text.setText(Integer.toString(previewSet.getPosition(i) + 1));
+            mGridLayout.addView(view);
+        }
+
+        // 分批加载图片：优先加载前12个（约前2行，通常可见），延迟加载后面的
+        // 这样可以减少初始加载压力，提升滚动性能
+        final int immediateLoadCount = 12; // 立即加载的数量
+
+        for (int i = 0; i < totalSize; i++) {
+            View view = mGridLayout.getChildAt(i);
+            if (view == null) {
+                continue;
+            }
+
+            LoadImageView image = view.findViewById(R.id.image);
+            if (image == null) {
+                continue;
+            }
+
+            final int index = i;
+
+            if (i < immediateLoadCount) {
+                // 前12个：立即加载（通常可见区域）
+                image.post(() -> {
+                    if (image.getParent() != null && mGridLayout != null) {
+                        previewSet.load(image, gid, index);
+                    }
+                });
+            } else {
+                // 后面的：延迟加载，根据索引调整延迟时间
+                int delay = (i - immediateLoadCount) * 50; // 每个延迟50ms
+                delay = Math.min(delay, 500); // 最大延迟500ms
+                handler.postDelayed(() -> {
+                    if (image.getParent() != null && mGridLayout != null) {
+                        previewSet.load(image, gid, index);
+                    }
+                }, delay);
+            }
         }
     }
+
 
     private static String getRatingText(float rating, Resources resources) {
         int resId;
@@ -1458,15 +1513,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
                 AppHelper.share(activity, url);
             }
         } else if (mTorrent == v) {
-            if (mGalleryDetail != null) {
-                TorrentListDialogHelper helper = new TorrentListDialogHelper();
-                Dialog dialog = new AlertDialog.Builder(mContext)
-                        .setTitle(R.string.torrents)
-                        .setView(R.layout.dialog_torrent_list)
-                        .setOnDismissListener(helper)
-                        .show();
-                helper.setDialog(dialog, mGalleryDetail.torrentUrl, EhApplication.getOkHttpClient(mContext));
-            }
+            showTorrentListDialog();
         } else if (mHaH == v) {
             if (mGalleryDetail == null) {
                 return;
@@ -1540,8 +1587,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             }
         } else {
             Object o = v.getTag(R.id.tag);
-            if (o instanceof String) {
-                String tag = (String) o;
+            if (o instanceof String tag) {
                 ListUrlBuilder lub = new ListUrlBuilder();
                 lub.setMode(ListUrlBuilder.MODE_TAG);
                 lub.setKeyword(tag);
@@ -1560,6 +1606,13 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
                 startActivity(intent);
             }
         }
+    }
+
+    private void showTorrentListDialog() {
+        if (mGalleryDetail == null || mContext == null || torrentDownloadController == null) {
+            return;
+        }
+        torrentDownloadController.showTorrentList(mContext, mGalleryDetail.torrentUrl, EhApplication.getOkHttpClient(mContext));
     }
 
     private void showFilterUploaderDialog() {
@@ -1881,172 +1934,31 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
         mModifingFavorites = false;
     }
 
-    /**
-     * 2022/4/7
-     * 心情不好
-     * 这个方法写的跟屎一样
-     */
-    @SuppressLint("SetTextI18n")
-    private void showTorrentDownloadDialog(TorrentDownloadMessage message, boolean success) {
-        Context context = getEHContext();
-        if (!isAdded()) {
-            return;
-        }
-        if (message.progress == 100 || !success) {
-            if (torrentDownloadView == null) {
-                return;
-            }
-            View detail = torrentDownloadView.findViewById(R.id.download_detail);
-            View progressView = torrentDownloadView.findViewById(R.id.progress_view);
-            detail.setVisibility(View.VISIBLE);
-            progressView.setVisibility(View.GONE);
+    private record ExitTransaction(View mThumb) implements TransitionHelper {
 
-            TextView state = torrentDownloadView.findViewById(R.id.download_state);
-            TextView path = torrentDownloadView.findViewById(R.id.download_path);
-            Button leftButton = torrentDownloadView.findViewById(R.id.leader);
-            Button rightButton = torrentDownloadView.findViewById(R.id.action);
-
-            path.setText(getString(R.string.download_torrent_path, message.path));
-
-            rightButton.setText(R.string.sure);
-
-            rightButton.setOnClickListener(l -> dismissTorrentDialog());
-
-            if (success) {
-                leftButton.setText(R.string.open_directory);
-                leftButton.setOnClickListener(l -> {
-                    dismissTorrentDialog();
-                    FileUtils.openAssignFolder(message.dir, context);
-                });
-                state.setText(getString(R.string.download_torrent_state) + getString(R.string.download_state_finish));
-            } else {
-                leftButton.setText(R.string.try_again);
-                leftButton.setOnClickListener(l -> {
-                    dismissTorrentDialog();
-                    onClick(mTorrent);
-                });
-                state.setText(getString(R.string.download_torrent_state) + getString(R.string.download_state_failed));
-            }
-            if (downLoadAlertDialog != null) {
-                downLoadAlertDialog.setCancelable(true);
-            }
-        } else {
-            String progressString = message.progress + "%";
-            if (downLoadAlertDialog != null && downLoadAlertDialog.isShowing()) {
-                if (downloadProgress != null) {
-                    downloadProgress.setText(progressString);
+        @Override
+            public boolean onTransition(Context context,
+                                        FragmentTransaction transaction, Fragment exit, Fragment enter) {
+                if (!(enter instanceof GalleryListScene) && !(enter instanceof DownloadsScene) &&
+                        !(enter instanceof FavoritesScene) && !(enter instanceof HistoryScene)) {
+                    return false;
                 }
-                return;
+
+                String transitionName = ViewCompat.getTransitionName(mThumb);
+                if (transitionName != null) {
+                    exit.setSharedElementReturnTransition(
+                            TransitionInflater.from(context).inflateTransition(R.transition.trans_move));
+                    exit.setExitTransition(
+                            TransitionInflater.from(context).inflateTransition(R.transition.trans_fade));
+                    enter.setSharedElementEnterTransition(
+                            TransitionInflater.from(context).inflateTransition(R.transition.trans_move));
+                    enter.setEnterTransition(
+                            TransitionInflater.from(context).inflateTransition(R.transition.trans_fade));
+                    transaction.addSharedElement(mThumb, transitionName);
+                }
+                return true;
             }
-            if (torrentDownloadView == null) {
-                return;
-            }
-            View detail = torrentDownloadView.findViewById(R.id.download_detail);
-            View progressView = torrentDownloadView.findViewById(R.id.progress_view);
-            detail.setVisibility(View.GONE);
-            progressView.setVisibility(View.VISIBLE);
-
-            downloadProgress = torrentDownloadView.findViewById(R.id.download_progress);
-
-            downloadProgress.setText(progressString);
         }
-
-        TextView tName = torrentDownloadView.findViewById(R.id.download_name);
-        tName.setText(message.name);
-        assert context != null;
-        if (downLoadAlertDialog != null) {
-            downLoadAlertDialog.show();
-        } else {
-            if (torrentDownloadView.getParent() != null) {
-                ((android.view.ViewGroup) torrentDownloadView.getParent()).removeView(torrentDownloadView);
-            }
-            downLoadAlertDialog = new AlertDialog.Builder(context)
-                    .setView(torrentDownloadView)
-                    .setCancelable(false)
-                    .show();
-        }
-
-    }
-
-    private void dismissTorrentDialog() {
-        if (downLoadAlertDialog == null) {
-            return;
-        }
-        // 检查 Fragment 是否仍然附加到 Activity，避免在 Activity 销毁后关闭对话框导致崩溃
-        if (!isAdded() || getActivity() == null) {
-            downLoadAlertDialog = null;
-            return;
-        }
-        try {
-            if (downLoadAlertDialog.isShowing()) {
-                downLoadAlertDialog.dismiss();
-            }
-        } catch (IllegalArgumentException e) {
-            // 对话框已经不再附加到窗口管理器，忽略异常
-            ExceptionUtils.throwIfFatal(e);
-        }
-        downLoadAlertDialog = null;
-    }
-
-    @SuppressLint("HandlerLeak")
-    private class TorrentDownloadHandler extends Handler {
-        public TorrentDownloadHandler() {
-            super(Looper.getMainLooper());
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            // 检查 Fragment 是否仍然附加，避免在 Activity 销毁后处理消息导致崩溃
-            if (!isAdded() || getActivity() == null) {
-                return;
-            }
-            TorrentDownloadMessage message = msg.getData().getParcelable("torrent_download_message");
-            if (message.progress == 200) {
-                dismissTorrentDialog();
-                String text = mContext.getString(R.string.torrent_exist, message.path);
-                Toast.makeText(getEHContext(), text, Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (message.failed) {
-                dismissTorrentDialog();
-                showTorrentDownloadDialog(message, false);
-                return;
-            }
-            showTorrentDownloadDialog(message, true);
-        }
-    }
-
-    private static class ExitTransaction implements TransitionHelper {
-
-        private final View mThumb;
-
-        public ExitTransaction(View thumb) {
-            mThumb = thumb;
-        }
-
-        @Override
-        public boolean onTransition(Context context,
-                                    FragmentTransaction transaction, Fragment exit, Fragment enter) {
-            if (!(enter instanceof GalleryListScene) && !(enter instanceof DownloadsScene) &&
-                    !(enter instanceof FavoritesScene) && !(enter instanceof HistoryScene)) {
-                return false;
-            }
-
-            String transitionName = ViewCompat.getTransitionName(mThumb);
-            if (transitionName != null) {
-                exit.setSharedElementReturnTransition(
-                        TransitionInflater.from(context).inflateTransition(R.transition.trans_move));
-                exit.setExitTransition(
-                        TransitionInflater.from(context).inflateTransition(R.transition.trans_fade));
-                enter.setSharedElementEnterTransition(
-                        TransitionInflater.from(context).inflateTransition(R.transition.trans_move));
-                enter.setEnterTransition(
-                        TransitionInflater.from(context).inflateTransition(R.transition.trans_fade));
-                transaction.addSharedElement(mThumb, transitionName);
-            }
-            return true;
-        }
-    }
 
     private static class ModifyFavoritesListener extends EhCallback<GalleryDetailScene, Void> {
 
@@ -2226,140 +2138,6 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
                 mArchiveFormParamOr = result.first;
                 mArchiveList = result.second;
                 bind(result.second);
-            }
-        }
-
-        @Override
-        public void onFailure(Exception e) {
-            mRequest = null;
-            Context context = getEHContext();
-            if (null != context && null != mProgressView && null != mErrorText && null != mListView) {
-                mProgressView.setVisibility(View.GONE);
-                mErrorText.setVisibility(View.VISIBLE);
-                mListView.setVisibility(View.GONE);
-                mErrorText.setText(ExceptionUtils.getReadableString(e));
-            }
-        }
-
-        @Override
-        public void onCancel() {
-            mRequest = null;
-        }
-    }
-
-    private class TorrentListDialogHelper implements AdapterView.OnItemClickListener,
-            DialogInterface.OnDismissListener, EhClient.Callback<Pair<String, String>[]> {
-
-        @Nullable
-        private ProgressView mProgressView;
-        @Nullable
-        private TextView mErrorText;
-        @Nullable
-        private ListView mListView;
-        @Nullable
-        private EhRequest mRequest;
-        @Nullable
-        private Dialog mDialog;
-        @Nullable
-        private OkHttpClient okHttpClient;
-
-        public void setDialog(@Nullable Dialog dialog, String url, OkHttpClient okHttpClient) {
-            if (dialog == null)
-                return;
-            mDialog = dialog;
-            this.okHttpClient = okHttpClient;
-            mProgressView = (ProgressView) ViewUtils.$$(dialog, R.id.progress);
-            mErrorText = (TextView) ViewUtils.$$(dialog, R.id.text);
-            mListView = (ListView) ViewUtils.$$(dialog, R.id.list_view);
-            mListView.setOnItemClickListener(this);
-
-            Context context = getEHContext();
-            if (context != null) {
-                if (mTorrentList == null) {
-                    mErrorText.setVisibility(View.GONE);
-                    mListView.setVisibility(View.GONE);
-                    mRequest = new EhRequest().setMethod(EhClient.METHOD_GET_TORRENT_LIST)
-                            .setArgs(url, mGid, mToken)
-                            .setCallback(this);
-                    if (mRequest == null) {
-                        return;
-                    }
-                    EhApplication.getEhClient(context).execute(mRequest);
-                } else {
-                    bind(mTorrentList);
-                }
-            }
-        }
-
-        private void bind(Pair<String, String>[] data) {
-            if (null == mDialog || null == mProgressView || null == mErrorText || null == mListView) {
-                return;
-            }
-
-            if (0 == data.length) {
-                mProgressView.setVisibility(View.GONE);
-                mErrorText.setVisibility(View.VISIBLE);
-                mListView.setVisibility(View.GONE);
-                mErrorText.setText(R.string.no_torrents);
-            } else {
-                String[] nameArray = new String[data.length];
-                for (int i = 0, n = data.length; i < n; i++) {
-                    nameArray[i] = data[i].second;
-                }
-                mProgressView.setVisibility(View.GONE);
-                mErrorText.setVisibility(View.GONE);
-                mListView.setVisibility(View.VISIBLE);
-                mListView.setAdapter(new ArrayAdapter<>(mDialog.getContext(), R.layout.item_select_dialog, nameArray));
-            }
-        }
-
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            Context context = getEHContext();
-            if (null != context && null != mTorrentList && position < mTorrentList.length) {
-                downLoadPlanB(parent, view, position, id, context);
-            }
-        }
-
-        private void downLoadPlanB(AdapterView<?> parent, View view, int position, long id, Context context) {
-            try {
-                String url = mTorrentList[position].first;
-                String name = mTorrentList[position].second + ".torrent";
-                String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath() + "/" + TORRENT_PATH;
-                DownloadTorrentManager downloadTorrentManager = DownloadTorrentManager.get(okHttpClient);
-                if (!EhApplication.addDownloadTorrent(context, url)) {
-                    Toast.makeText(context, R.string.downloading, Toast.LENGTH_LONG).show();
-                    return;
-                }
-                downloadTorrentManager.download(url, path, name, torrentDownloadHandler, context);
-
-            } catch (Exception e) {
-                ExceptionUtils.throwIfFatal(e);
-            }
-            if (mDialog != null) {
-                mDialog.dismiss();
-                mDialog = null;
-            }
-        }
-
-        @Override
-        public void onDismiss(DialogInterface dialog) {
-            if (mRequest != null) {
-                mRequest.cancel();
-                mRequest = null;
-            }
-            mDialog = null;
-            mProgressView = null;
-            mErrorText = null;
-            mListView = null;
-        }
-
-        @Override
-        public void onSuccess(Pair<String, String>[] result) {
-            if (mRequest != null) {
-                mRequest = null;
-                mTorrentList = result;
-                bind(result);
             }
         }
 

@@ -115,6 +115,10 @@
     <string name="error_empty_html">Page vide</string>
     <string name="error_cant_get_image">Impossible d\'obtenir l\'image</string>
     <string name="error_igneous_wrong">Ignous incorrect\nassurez-vous d\'avoir les permissions et reconnectez-vous</string>
+    <string name="gallery_gl_fallback_title">Le moteur OpenGL est indisponible</string>
+    <string name="gallery_gl_fallback_message">Cet appareil ne peut pas initialiser EGL pour le moment. Revenez en arrière et réessayez plus tard.</string>
+    <string name="gallery_gl_fallback_action_close">Retour</string>
+    <string name="gallery_gl_fallback_toast">Échec du rendu GL, basculement vers une page de secours sécurisée</string>
 
     <string name="app_waring">Le contenu de l\'application provient de l\'Internet, dont quelque chose peut vous causer le dommage physique ou mentale. Vous l\'avez bien compris et voulez continuer quand même.</string>
     <string name="error_username_cannot_empty">Le nom d\'utilisateur ne doit pas être une chaîne vide</string>
@@ -349,6 +353,11 @@
     <string name="gallery_previews">Aperçus de la galerie</string>
     <string name="go_to">Aller à</string>
     <string name="tag_filter">Filtrer le tag</string>
+    <string name="tag_selector_search_hint">Rechercher des tags…</string>
+    <string name="tag_selector_selected_count">Sélectionnés : %d</string>
+    <string name="tag_selector_selected_section_title">Tags sélectionnés</string>
+    <string name="tag_selector_empty_selected">Aucun tag sélectionné</string>
+    <string name="tag_selector_other_group">Autres</string>
 
     <!-- Download -->
     <string name="scene_download_title">%s Galeries - %s</string>
@@ -560,6 +569,8 @@
     <string name="settings_download_download_list_pagination_summary">La fonction de pagination ne prendra effet que lorsque la longueur de la liste est supérieure à 500</string>
     <string name="settings_download_download_order_by_asc">Ordre de téléchargement croissant</string>
     <string name="settings_download_download_order_by_asc_summary">Télécharger dans l\'ordre lors du téléchargement de toutes les galeries</string>
+    <string name="settings_download_sync_while_reading">Téléchargement synchronisé pendant la lecture</string>
+    <string name="settings_download_sync_while_reading_summary">Lors de la navigation dans une galerie non téléchargée, enregistre automatiquement les images consultées dans le répertoire de téléchargement</string>
     <string name="settings_download_restore_download_items">Rétablir les galeries téléchargées</string>
     <string name="settings_download_restore_download_items_summary">Rétablir tous objets déjà téléchargés dans la destination de téléchargement</string>
     <string name="settings_download_restoring">Rétablissement en cours</string>
@@ -605,6 +616,14 @@
     <string name="settings_advanced_wifi_sander_summary">Migration de données via point d\'accès Wi-Fi</string>
     <string name="settings_advanced_wifi_client">Réception de données de migration Wi-Fi</string>
     <string name="settings_advanced_wifi_client_summary">Recevoir les données de migration depuis les points d\'accès Wi-Fi</string>
+    <string name="wifi_send_download_location">Migrer le répertoire de téléchargement</string>
+    <string name="wifi_download_dir_empty">Aucun dossier de galerie migrable trouvé</string>
+    <string name="wifi_download_dir_no_location">Le répertoire de téléchargement n\'est pas défini sur cet appareil</string>
+    <string name="wifi_download_dir_migrating">Migration de %1$s (%2$d/%3$d fichiers)</string>
+    <string name="wifi_download_dir_manifest_received">%1$s (%2$d/%3$d) : ignorer %4$d, transférer %5$d</string>
+    <string name="wifi_download_dir_file_done">Fichier reçu : %s</string>
+    <string name="wifi_download_dir_files_progress">%d fichiers reçus</string>
+    <string name="wifi_download_dir_file_failed">Échec de la somme de contrôle du fichier, fichier ignoré</string>
 
     <string name="settings_about">À propos de l\'application</string>
     <string name="settings_about_declaration_summary">EhViewer ne s\'affilie à E-Hentai de aucune manière.</string>

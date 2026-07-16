@@ -40,6 +40,7 @@ import com.hippo.util.ExceptionUtils;
 import com.hippo.lib.yorozuya.IOUtils;
 import com.hippo.lib.yorozuya.NumberUtils;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -51,6 +52,21 @@ public class SpiderInfo {
 
     private static final String VERSION_STR = "VERSION";
     private static final int VERSION = 2;
+
+    /** Upper bound for pages from local file; prevents OOM from corrupted spider_info. */
+    private static final int MAX_SPIDER_INFO_PAGES = 100_000;
+
+    /** Header fields (version, gid, token, counts) should stay tiny; cap lines to bound memory. */
+    private static final int MAX_SPIDER_INFO_HEADER_LINE = 8192;
+
+    /**
+     * One stored line is "{index} {pToken}"; real pTokens are short. Keeps per-line read small so
+     * pages × lineSize cannot exhaust the heap (default readAsciiLine allows 128KB per line).
+     */
+    private static final int MAX_PTOKEN_FILE_LINE = 2048;
+
+    /** Reject absurdly long tokens from corrupt files before putting them in the map. */
+    private static final int MAX_STORED_PTOKEN_CHARS = 1024;
 
     static final String TOKEN_FAILED = "failed";
 
@@ -109,7 +125,6 @@ public class SpiderInfo {
     }
 
     @Nullable
-    @SuppressWarnings("InfiniteLoopStatement")
     public static SpiderInfo read(@Nullable InputStream is) {
         if (null == is) {
             return null;
@@ -119,11 +134,11 @@ public class SpiderInfo {
         try {
             spiderInfo = new SpiderInfo();
             // Get version
-            String line = IOUtils.readAsciiLine(is);
+            String line = IOUtils.readAsciiLine(is, MAX_SPIDER_INFO_HEADER_LINE);
             int version = getVersion(line);
             if (version == VERSION) {
                 // Read next line
-                line = IOUtils.readAsciiLine(is);
+                line = IOUtils.readAsciiLine(is, MAX_SPIDER_INFO_HEADER_LINE);
             } else if (version == 1) {
                 // pass
             } else {
@@ -133,35 +148,39 @@ public class SpiderInfo {
             // Start page
             spiderInfo.startPage = getStartPage(line);
             // Gid
-            spiderInfo.gid = Long.parseLong(IOUtils.readAsciiLine(is));
+            spiderInfo.gid = Long.parseLong(IOUtils.readAsciiLine(is, MAX_SPIDER_INFO_HEADER_LINE));
             // Token
-            spiderInfo.token = IOUtils.readAsciiLine(is);
+            spiderInfo.token = IOUtils.readAsciiLine(is, MAX_SPIDER_INFO_HEADER_LINE);
             // Deprecated, mode, skip it
-            IOUtils.readAsciiLine(is);
+            IOUtils.readAsciiLine(is, MAX_SPIDER_INFO_HEADER_LINE);
             // Preview pages
-            spiderInfo.previewPages = Integer.parseInt(IOUtils.readAsciiLine(is));
+            spiderInfo.previewPages = Integer.parseInt(IOUtils.readAsciiLine(is, MAX_SPIDER_INFO_HEADER_LINE));
             // Preview pre page
-            line = IOUtils.readAsciiLine(is);
+            line = IOUtils.readAsciiLine(is, MAX_SPIDER_INFO_HEADER_LINE);
             if (version == 1) {
                 // Skip it
             } else {
                 spiderInfo.previewPerPage = Integer.parseInt(line);
             }
             // Pages
-            spiderInfo.pages = Integer.parseInt(IOUtils.readAsciiLine(is));
+            spiderInfo.pages = Integer.parseInt(IOUtils.readAsciiLine(is, MAX_SPIDER_INFO_HEADER_LINE));
             // Check pages
-            if (spiderInfo.pages <= 0) {
+            if (spiderInfo.pages <= 0 || spiderInfo.pages > MAX_SPIDER_INFO_PAGES) {
                 return null;
             }
-            // PToken
+            // PToken (at most one line per page in valid files; cap lines to avoid OOM on corrupt files)
             spiderInfo.pTokenMap = new SparseArray<>(spiderInfo.pages);
-            while (true) { // EOFException will raise
-                line = IOUtils.readAsciiLine(is);
+            for (int linesRead = 0; linesRead < spiderInfo.pages; linesRead++) {
+                try {
+                    line = IOUtils.readAsciiLine(is, MAX_PTOKEN_FILE_LINE);
+                } catch (EOFException e) {
+                    break;
+                }
                 int pos = line.indexOf(" ");
                 if (pos > 0) {
                     int index = Integer.parseInt(line.substring(0, pos));
                     String pToken = line.substring(pos + 1);
-                    if (!TextUtils.isEmpty(pToken)) {
+                    if (!TextUtils.isEmpty(pToken) && pToken.length() <= MAX_STORED_PTOKEN_CHARS) {
                         spiderInfo.pTokenMap.put(index, pToken);
                     }
                 } else {

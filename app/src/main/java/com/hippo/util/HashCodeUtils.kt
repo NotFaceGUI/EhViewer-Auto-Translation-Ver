@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Hippo Seven
+ * Copyright 2017 Hippo Seven
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hippo.util
 
-package com.hippo.util;
+/*
+ * Created by Hippo on 2017/9/4.
+ */
 
-public class MutableBoolean {
+object HashCodeUtils {
+    private const val X = 31
 
-  public boolean value;
-
-  public MutableBoolean(boolean value) {
-    this.value = value;
-  }
+    /**
+     * <pre>`args[0].hashCode()*31^(n-1) + args[1].hashCode()*31^(n-2) + ... + args[n-1].hashCode() `</pre>
+     * Returns 0 if `args == null`.
+     */
+    @JvmStatic
+    fun hashCode(vararg args: Any?): Int {
+        if (args == null) {
+            return 0
+        }
+        var hash = 0
+        for (o in args) {
+            hash = X * hash + (o?.hashCode() ?: 0)
+        }
+        return hash
+    }
 }

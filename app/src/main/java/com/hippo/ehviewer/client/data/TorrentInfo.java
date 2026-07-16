@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Hippo Seven
+ * Copyright 2016 Hippo Seven
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,17 @@
  * limitations under the License.
  */
 
-package com.hippo.util;
-/*
- * Created by Hippo on 2017/9/4.
- */
+package com.hippo.ehviewer.client.data;
 
-public class HashCodeUtils {
+public class TorrentInfo {
 
-  private static final int X = 31;
+    public final String url;
+    public final String name;
+    public final String posted;
 
-  /**
-   * <pre>{@code
-   * args[0].hashCode()*31^(n-1) + args[1].hashCode()*31^(n-2) + ... + args[n-1].hashCode()
-   * }</pre>
-   * Returns 0 if {@code args == null}.
-   */
-  public static int hashCode(Object... args) {
-    if (args == null) {
-      return 0;
+    public TorrentInfo(String url, String name, String posted) {
+        this.url = url;
+        this.name = name;
+        this.posted = posted;
     }
-    int hash = 0;
-    for (Object o: args) {
-      hash = X * hash + (o != null ? o.hashCode() : 0);
-    }
-    return hash;
-  }
 }
