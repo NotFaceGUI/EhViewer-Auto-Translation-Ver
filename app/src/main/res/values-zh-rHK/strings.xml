@@ -63,6 +63,10 @@
     <string name="downloads">下載</string>
     <string name="added_to_translation_queue">已加入翻譯隊列</string>
     <string name="already_in_translation_queue">已在翻譯隊列中</string>
+    <string name="translation_method_choose">選擇翻譯方式</string>
+    <string name="translation_method_llm">大模型翻譯</string>
+    <string name="translation_method_legacy">本地翻譯</string>
+    <string name="added_to_llm_queue">已加入大模型翻譯隊列</string>
     <string name="translation_config">翻譯配置</string>
     <string name="translation_config_test">測試連線</string>
     <string name="translation_base_host">伺服器主機</string>

@@ -45,6 +45,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -69,6 +70,8 @@ import com.hippo.ehviewer.client.data.GalleryComment;
 import com.hippo.ehviewer.client.data.GalleryCommentList;
 import com.hippo.ehviewer.client.data.GalleryDetail;
 import com.hippo.ehviewer.client.parser.VoteCommentParser;
+import com.hippo.ehviewer.translation.CommentTranslationUtil;
+import com.hippo.ehviewer.ui.fragment.TranslationSettingsFragment;
 import com.hippo.ehviewer.ui.MainActivity;
 import com.hippo.reveal.ViewAnimationUtils;
 import com.hippo.ripple.Ripple;
@@ -93,7 +96,9 @@ import com.hippo.lib.yorozuya.StringUtils;
 import com.hippo.lib.yorozuya.ViewUtils;
 import com.hippo.lib.yorozuya.collect.IntList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 画廊评论对象
@@ -142,6 +147,9 @@ public final class GalleryCommentsScene extends ToolbarScene
 
     private boolean mShowAllComments = false;
     private boolean mRefreshingComments = false;
+    private final Map<Long, String> mTransCache = new HashMap<>();
+
+    private final android.os.Handler mHandler = new android.os.Handler(Looper.getMainLooper());
 
     private int mOriginalSoftInputMode;
 
@@ -743,6 +751,7 @@ public final class GalleryCommentsScene extends ToolbarScene
         private final TextView user;
         private final TextView time;
         private final LinkifyTextView comment;
+        private TextView transBtn;
 
         public ActualCommentHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater, R.layout.item_gallery_comment, parent);
@@ -783,6 +792,60 @@ public final class GalleryCommentsScene extends ToolbarScene
             user.setText(value.user);
             time.setText(ReadableTime.getTimeAgo(value.time));
             comment.setText(generateComment(comment.getContext(), comment, value));
+
+            // "译"按钮（首次创建，右下角）
+            if (transBtn == null) {
+                transBtn = new TextView(itemView.getContext());
+                transBtn.setText("译");
+                transBtn.setTextColor(0xFF4FC3F7);
+                transBtn.setTextSize(12);
+                transBtn.setPadding(8, 4, 0, 0);
+                RelativeLayout.LayoutParams btnLp = new RelativeLayout.LayoutParams(
+                        RelativeLayout.LayoutParams.WRAP_CONTENT,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT);
+                btnLp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+                btnLp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+                btnLp.setMargins(0, 0, 0, 4);
+                ((ViewGroup) itemView).addView(transBtn, btnLp);
+            }
+
+            // 重置（始终显示原文）
+            transBtn.setText("译");
+            transBtn.setTag(null);
+
+            transBtn.setOnClickListener(v -> {
+                if (transBtn.getTag() instanceof String) {
+                    // 当前显示译文，切回原文
+                    comment.setText(generateComment(comment.getContext(), comment, value));
+                    transBtn.setTag(null);
+                    return;
+                }
+                // 当前显示原文，检查缓存
+                if (mTransCache.containsKey(value.id)) {
+                    String cached = mTransCache.get(value.id);
+                    transBtn.setTag(cached);
+                    comment.setText(Html.fromHtml(cached,
+                            new URLImageGetter(comment,
+                            EhApplication.getConaco(comment.getContext())), null));
+                    return;
+                }
+                transBtn.setText("⏳");
+                CommentTranslationUtil.translatePreserveHtml(
+                        value.comment,
+                        TranslationSettingsFragment.getTargetLanguage(),
+                        (text, e) -> {
+                            mHandler.post(() -> {
+                                transBtn.setText("译");
+                                if (e != null || text == null || text.isEmpty()) return;
+                                transBtn.setTag(text);
+                                mTransCache.put(value.id, text);
+                                comment.setText(Html.fromHtml(text,
+                                        new URLImageGetter(comment,
+                                        EhApplication.getConaco(comment.getContext())), null));
+                            });
+                        });
+            });
+
         }
     }
 

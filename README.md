@@ -35,7 +35,7 @@ Fork 来源：基于 `Ehviewer_CN_SXJ` 仓库二次开发并聚焦翻译功能�
 - [百度云](https://pan.baidu.com/s/1rh-lvEc-QjiMtfPi6T1BKA) 提取码：7p6z
 - [夸克网盘](https://pan.quark.cn/s/0de32f69e12a) 提取码：SnVD
 - [蓝奏云](https://wwbfg.lanzouu.com/iWAFL3uefh8d)，电脑端可正常下载 提取码：3txx
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
 - Torrent链接:magnet:?xt=urn:btih:ec1403341edaba853b0836d2d3c5976498572a3c&xt=urn:btmh:1220453fdf4272b27c81d88a4ddae25a64ca524a13e53f835430b4acacb2e7ae3bcb&dn=EhViewer-2.0.2.2.apk&xl=27747451
 
 普通翻译流程（3–6）：在下载页选择“上传翻译”（支持范围选择），上传打包 zip；客户端轮询服务进度；结果下载到 `translated` 目录并自动刷新，阅读页可在“译文/原文”间切换。
@@ -90,6 +90,18 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 
 
 # Changelog
+## 2026/07/17
+### 新版发布 2.0.2.3-at
+
+- **评论/标题翻译**：详情页和评论列表页支持翻译标题与评论，点击右下角"译"按钮即可翻译，再次点击切回原文
+- **评论文本保留链接**：翻译评论时保留原始 HTML 标签和链接，原样输出只翻译文字内容
+- **标题智能翻译**：标题翻译只翻译作品名，保留社团名、作者名、系列名等元数据不变
+- **翻译设置增强**：新增"文本翻译模型"设置，可选择已配置的 OpenAI 兼容 Provider 用于评论/标题翻译
+- **翻译方式预设**：移除每次翻译时选择"大模型/本地"的弹窗，改为设置页预设默认方式，一键翻译更快捷
+- 版本号后缀从 `-llm` 改为 `-at`
+- 修复了浏览历史未正确保存的问题
+- 修复评论时输入框被键盘遮挡的问题
+
 ## 2026/07/01
 ### 新版发布2.0.2.2
 
@@ -110,7 +122,7 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - [百度云](https://pan.baidu.com/s/19ZEEdF3waR3hkMghbmu7rw) 提取码：gxsj
 - [夸克网盘](https://pan.quark.cn/s/bffd976d75c4) 提取码：TJDR
 - [蓝奏云](https://wwbfg.lanzouu.com/iZPct3u2hxef)，电脑端可正常下载 提取码：1obh
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
 - Torrent链接:magnet:?xt=urn:btih:76cf0c1951465d0ab5e4e6fc0b4f371aceec8f9c&xt=urn:btmh:12201dbee30e3448b93d0b725ba19c5fe6a19b042dd662fe9ef898d92c3e67ca6c80&dn=EhViewer-2.0.2.1.apk&xl=27747322
 
 
@@ -135,7 +147,7 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - [百度云](https://pan.baidu.com/s/1hFLjNrU-_c1u8iugt82d6g) 提取码：wz2h
 - [夸克网盘](https://pan.quark.cn/s/133080ed0571) 提取码：ekzT
 - [蓝奏云](https://wwbfg.lanzouu.com/i1hv53qtvjba)，电脑端可正常下载 提取码：eg80
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
 - Torrent链接:magnet:?xt=urn:btih:a14acab7edec4b1c5f10d291296fda3e19449a0d&xt=urn:btmh:1220f25dba401d5db2cfb2d864114728418c1e7bf746679182a3155ef3e1714539cb&dn=EhViewer-2.0.1.8.apk&xl=27739161
 
 
@@ -152,7 +164,7 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - [百度云](https://pan.baidu.com/s/17a5zwo0HeTp_Iqh9P2QwXQ) 提取码：7y92
 - [夸克网盘](https://pan.quark.cn/s/036dd4d5f09d) 提取码：B6J6
 - [蓝奏云](https://wwbfg.lanzouu.com/iFc783oecgmh)，电脑端可正常下载 提取码：dfg8
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
 - Torrent链接:magnet:?xt=urn:btih:c3aab1194eb843bac7274b87873dc94041310e52&xt=urn:btmh:1220c3640ed2ef7f588376f7dadeffc99463d764608b577beb038378788996fc1ad5&dn=EhViewer-2.0.1.7.apk&xl=27705830
 
 
@@ -174,7 +186,7 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - [百度云](https://pan.baidu.com/s/1koygBtTteJtDHZTQYL8wXQ) 提取码：iqev
 - [夸克网盘](https://pan.quark.cn/s/b41421a61e70) 提取码：MrnK
 - [蓝奏云](https://wwbfg.lanzouu.com/iNSBF3m1jveb)，电脑端可正常下载 提取码：i4f8
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
 - Torrent链接:magnet:?xt=urn:btih:8488a933608f5b3901de8a2bedc669e20ff94839&xt=urn:btmh:1220dbe6fffcb6aff255e089e3bb0cefeb33940c27d82e37163252abe4813c987e33&dn=EhViewer-2.0.1.6.apk&xl=27702785
 
 
@@ -192,7 +204,7 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - [百度云](https://pan.baidu.com/s/1_rbxH65GXWjx_pxYIf0Pug) 提取码：wzv4
 - [夸克网盘](https://pan.quark.cn/s/95915acfe88b) 提取码：HmUu
 - [蓝奏云](https://wwbfg.lanzouu.com/iYopw3jiyizi)，电脑端可正常下载 提取码：fhbq
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
 - Torrent链接:magnet:?xt=urn:btih:4869fe5d6cebba6e1f2b672e3523cca83838b466&xt=urn:btmh:1220df01410d828d8544b9efe8e15fe3e7323eab74d2ae962947f324dd36e0a99b74&dn=EhViewer-2.0.1.5.apk&xl=27934862
 
 
@@ -208,7 +220,7 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - [百度云](https://pan.baidu.com/s/1VD8NwRZTUVkO5hsTCPd95A) 提取码：hfms
 - [夸克网盘](https://pan.quark.cn/s/685e409e6164) 提取码：yiie
 - [蓝奏云](https://wwbfg.lanzouu.com/iM6GO3hj88cd)，电脑端可正常下载 提取码：cjgb
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
 - Torrent链接: magnet:?xt=urn:btih:fd7fb29419c9b6f7a22bbbd899500fb828e2e5ce&xt=urn:btmh:1220aa0bf5802d34adeb7e60b17f0466f951a4d96dd4ab5b06158af2690bee2cb073&dn=EhViewer-2.0.1.4.apk&xl=27623297
 
 
@@ -226,7 +238,7 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - [百度云](https://pan.baidu.com/s/1EPEqfeklH0Pdk_mEiuJ8rQ) 提取码：9cas
 - [夸克网盘](https://pan.quark.cn/s/cb19c11bcb6d) 提取码：WJWs
 - [蓝奏云](https://wwbfg.lanzouu.com/ipmeo3fa1umh)，电脑端可正常下载 提取码：4jop
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
 - Torrent链接: magnet:?xt=urn:btih:a547ca192aada5109bbf891bc5ea21b04d50972e&xt=urn:btmh:12209bc1fe78c6f1b431a120f2a24dc89556f5a8da767f710d8b6840a461146fc434&dn=EhViewer-2.0.1.1.apk&xl=27606911
 
 
@@ -248,7 +260,7 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - [百度云](https://pan.baidu.com/s/1ZOzR9W24cDRVYtiR_msOoQ) 提取码：2rsb
 - [夸克网盘](https://pan.quark.cn/s/b023fa0249dd) 提取码：iKSY
 - [蓝奏云](https://wwbfg.lanzouu.com/iSJdX3eyu95g)，电脑端可正常下载 提取码：92ad
-- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
 - Torrent链接: magnet:?xt=urn:btih:241667f787c7f5d62e393d2404d2f9e2280d9cfb&xt=urn:btmh:122067d50a27f6b620b065a961d4cb2ad048e470b1e3b416ced2468c19d3b0d0cf61&dn=EhViewer-2.0.1.0.apk&xl=27606133
 
 ## 自用声明
@@ -278,19 +290,11 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - 端口与主机在应用“设置-翻译设置”中配置：`translation_base_host/服务器主机`、`translation_base_port/服务器端口`。
 - 输出格式建议 `webp`, 保持与输入相同的尺寸与质量。
 
-- 快速部署示例（基于 BallonsTranslator）：
-  - 仓库地址：`https://github.com/dmMaze/BallonsTranslator`（部署与依赖说明见其 README）。
-  - 环境要求：`Python <= 3.12`，建议安装 Git；确保可以访问所需模型文件。
-  - 获取源码或按其说明下载打包版；随后将提供的 API 服务解压到项目根目录下即可。
-  - 启动服务：`python -m uvicorn server.api:app --host 0.0.0.0 --port 8000`
-  - 需要额外安装：Pillow
-                fastapi
-                uvicorn
-                python-multipart
-                psutil
-                gradio
-  - 在应用中配置“设置-翻译设置”：填入服务主机与端口，使用“测试连接”确认可用后即可开始上传 zip/单页进行翻译。
-  - 使用的远端的配置，客户端不支持配置修改，若需修改请直接修改服务配置。
+- 快速部署示例（基于 Manga Translator）：
+  - 仓库地址：`https://github.com/NotFaceGUI/manga-translator-ui-dev`（部署与依赖说明见其 README）。
+  - 启动手机端 API 服务：`launch_jobs_api.py --port 8001`
+  - 在应用中配置"设置-翻译设置"：填入服务主机与端口（默认 8001），使用"测试连接"确认可用后即可开始上传 zip/单页进行翻译。
+  - 配置通过软件本身的 `examples/config.json` 管理，API 不支持远程修改。
 
 ## 配置提示
 

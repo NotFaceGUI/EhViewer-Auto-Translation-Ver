@@ -20,6 +20,7 @@ public class TranslationTaskInfo {
     public int rangeStart;
     public int rangeEnd;
     public String sourcePath;
+    public boolean useLlm;
 
     public enum State {
         Waiting,

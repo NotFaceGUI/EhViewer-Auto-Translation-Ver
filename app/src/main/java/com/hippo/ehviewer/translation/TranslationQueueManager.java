@@ -4,21 +4,34 @@ import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
+import com.hippo.ehviewer.AppConfig;
 import com.hippo.ehviewer.EhApplication;
+import com.hippo.ehviewer.Settings;
 import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.dao.DownloadInfo;
 import com.hippo.ehviewer.spider.SpiderDen;
+import com.hippo.ehviewer.translation.context.Glossary;
+import com.hippo.ehviewer.translation.context.GlossaryExtractor;
+import com.hippo.ehviewer.translation.context.PlotSummary;
+import com.hippo.ehviewer.translation.image.BatchComposer;
+import com.hippo.ehviewer.translation.image.ImageGrid;
+import com.hippo.ehviewer.translation.provider.AiClient;
+import com.hippo.ehviewer.translation.provider.Provider;
+import com.hippo.ehviewer.translation.provider.ProviderStore;
 import com.hippo.unifile.UniFile;
 
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.FileInputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -30,12 +43,16 @@ public class TranslationQueueManager {
     public interface Listener { void onChanged(); }
     private final List<Listener> listeners = new ArrayList<>();
     private String currentJobId;
+    private boolean currentIsLlm = false;
     private final TranslationQueuePoller poller = new TranslationQueuePoller();
     private final File storageFile = new File(EhApplication.getInstance().getFilesDir(), "translation_queue.json");
 
     public static TranslationQueueManager getInstance() { return INSTANCE; }
     public TranslationQueueManager() { readQueueFromDisk(); }
-    public void startPolling() { poller.start(); }
+    public void startPolling() {
+        poller.start();
+        startNextWaiting();
+    }
 
     public synchronized boolean enqueue(DownloadInfo info) {
         for (TranslationTaskInfo e : list) {
@@ -67,17 +84,23 @@ public class TranslationQueueManager {
     }
 
     public synchronized boolean enqueueRange(DownloadInfo info, int startPage, int endPage) {
+        return enqueueRange(info, startPage, endPage, false);
+    }
+
+    public synchronized boolean enqueueRange(DownloadInfo info, int startPage, int endPage, boolean useLlm) {
         int s = Math.max(1, startPage);
-        int epage = Math.max(s, endPage);
+        int epage = endPage <= 0 ? 0 : Math.max(s, endPage);
+        String rangeLabel = epage <= 0 ? " [ALL]" : " [" + s + "-" + epage + "]";
         for (TranslationTaskInfo e : list) {
-            if (e.gid == info.gid && !e.singlePage && e.rangeStart == s && e.rangeEnd == epage && e.state != TranslationTaskInfo.State.Canceled && e.state != TranslationTaskInfo.State.Completed) {
-                return false;
+            if (e.gid == info.gid && !e.singlePage && e.useLlm == useLlm && e.state != TranslationTaskInfo.State.Canceled && e.state != TranslationTaskInfo.State.Completed) {
+                if (epage <= 0 && e.rangeEnd <= 0) return false;
+                if (e.rangeStart == s && e.rangeEnd == epage) return false;
             }
         }
         TranslationTaskInfo t = new TranslationTaskInfo();
         t.gid = info.gid;
         t.token = info.token;
-        t.title = info.title + " [" + s + "-" + epage + "]";
+        t.title = info.title + rangeLabel + (useLlm ? " [LLM]" : "");
         t.thumb = info.thumb;
         t.uploader = info.uploader;
         t.rating = info.rating;
@@ -88,6 +111,7 @@ public class TranslationQueueManager {
         t.pageIndex = -1;
         t.rangeStart = s;
         t.rangeEnd = epage;
+        t.useLlm = useLlm;
         list.add(0, t);
         notifyChanged();
         if (currentJobId == null) {
@@ -255,6 +279,10 @@ public class TranslationQueueManager {
     }
 
     private void startNextSafely(TranslationTaskInfo t) {
+        if (t.useLlm) {
+            startLlmRangeSafely(t);
+            return;
+        }
         new Thread(() -> {
             try {
                 GalleryInfo gi = new GalleryInfo();
@@ -344,6 +372,441 @@ public class TranslationQueueManager {
                 }
             } catch (Exception ignored) {}
         }).start();
+    }
+
+    private void startLlmRangeSafely(TranslationTaskInfo t) {
+        new Thread(() -> {
+            try {
+                GalleryInfo gi = new GalleryInfo();
+                gi.gid = t.gid;
+                gi.token = t.token;
+                gi.title = t.title;
+                synchronized (this) {
+                    currentJobId = t.jobId;
+                    currentIsLlm = true;
+                    t.state = TranslationTaskInfo.State.Translating;
+                    notifyChanged();
+                }
+                UniFile dir = SpiderDen.getGalleryDownloadDir(gi);
+                if (dir == null || !dir.exists()) {
+                    synchronized (this) {
+                        t.state = TranslationTaskInfo.State.Completed;
+                        if (currentJobId != null && currentJobId.equals(t.jobId)) { currentJobId = null; currentIsLlm = false; }
+                        notifyChanged();
+                        startNextWaiting();
+                    }
+                    return;
+                }
+                UniFile translated = dir.findFile("translated");
+                if (translated == null || !translated.exists()) translated = dir.createDirectory("translated");
+                File tempBase = AppConfig.getExternalTempDir();
+                if (tempBase == null) tempBase = AppConfig.getTempDir();
+                File tempDir = new File(tempBase, "TranslateTemp");
+                if (!tempDir.exists()) tempDir.mkdirs();
+
+                Provider provider = ProviderStore.getInstance().getDefaultImageProvider();
+                if (provider == null) {
+                    Log.e("TranslationQueue", "LLM range: no provider configured");
+                    synchronized (this) {
+                        t.state = TranslationTaskInfo.State.Completed;
+                        if (currentJobId != null && currentJobId.equals(t.jobId)) { currentJobId = null; currentIsLlm = false; }
+                        notifyChanged();
+                        startNextWaiting();
+                    }
+                    return;
+                }
+                String model = provider.selectedModel != null ? provider.selectedModel : "gemini-3-pro-image-preview";
+                String basePrompt = GeminiApi.getCommonPrompt();
+                TranslationMetaStore metaStore = new TranslationMetaStore(gi.gid);
+                String promptSnippet = basePrompt != null ? (basePrompt.length() > 80 ? basePrompt.substring(0, 80) + "..." : basePrompt) : "";
+                int start = t.rangeStart;
+                int end = t.rangeEnd;
+                if (end <= 0) {
+                    end = findMaxPageInDir(dir);
+                    if (end <= 0) end = start;
+                }
+                if (end < start) end = start;
+                int total = end - start + 1;
+
+                Log.i("TranslationQueue", "========================================");
+                Log.i("TranslationQueue", "LLM start: " + t.title + " pages " + start + "-" + end + " (" + total + " pages)");
+                Log.i("TranslationQueue", "LLM provider=" + provider.name + " model=" + model + " chat=" + (provider.selectedChatModel != null ? provider.selectedChatModel : "none") + " batch=" + Settings.getBoolean("ai_batch_mode", true));
+                Log.i("TranslationQueue", "LLM dir=" + (dir != null ? dir.getUri().toString() : "null"));
+                Log.i("TranslationQueue", "========================================");
+                Glossary glossary = new Glossary(t.gid);
+
+                List<File> pageFiles = new ArrayList<>();
+                List<Integer> pageNumbers = new ArrayList<>();
+                for (int page = start; page <= end; page++) {
+                    if (t.state == TranslationTaskInfo.State.Canceled) break;
+                    File src = findSourceFileForPage(dir, page, tempDir);
+                    if (src != null) {
+                        pageFiles.add(src);
+                        pageNumbers.add(page);
+                    }
+                }
+                int done = 0;
+                int found = pageFiles.size();
+                Log.i("TranslationQueue", "LLM found " + found + " page files out of " + total + " requested");
+
+                if (found > 0 && provider.selectedChatModel != null && !provider.selectedChatModel.isEmpty()) {
+                    String analysisMode = Settings.getString("ai_analysis_mode", "chunk_one");
+                    Log.i("TranslationQueue", "LLM pre-analysis mode=" + analysisMode + " ...");
+                    runGlossaryAnalysis(provider, pageFiles, found, analysisMode, glossary);
+                    Log.i("TranslationQueue", "LLM pre-analysis done, glossary entries=" + glossary.getEntries().size());
+                }
+
+                boolean useBatch = Settings.getBoolean("ai_batch_mode", true);
+                if (useBatch && found > 1) {
+                    Log.i("TranslationQueue", "LLM entering batch mode, pages=" + found);
+                    done = processBatchMode(t, provider, model, basePrompt, promptSnippet, pageFiles, pageNumbers,
+                            translated, tempDir, glossary, metaStore, total, found);
+                    Log.i("TranslationQueue", "LLM batch done: " + done + "/" + found + " pages");
+                } else {
+                    Log.i("TranslationQueue", "LLM using single-page mode, batch=" + useBatch + " found=" + found);
+                }
+
+                if (done < found && t.state != TranslationTaskInfo.State.Canceled) {
+                    Log.i("TranslationQueue", "LLM fallback: " + done + "/" + found + " done, processing remaining " + (found - done) + " pages individually");
+                    for (int i = 0; i < found; i++) {
+                        if (t.state == TranslationTaskInfo.State.Canceled) break;
+                        int page = pageNumbers.get(i);
+                        String outName = String.format(Locale.US, "%08d", page) + ".png";
+                        UniFile existing = translated.findFile(outName);
+                        if (existing != null && existing.exists()) { done++; continue; }
+                        File src = pageFiles.get(i);
+                        String prompt = PlotSummary.buildSinglePagePrompt(basePrompt, glossary, page);
+                         byte[] png = generateImageSync(provider, model, prompt, src);
+                        if (png != null && png.length > 0) {
+                            writeTranslatedFile(translated, outName, png);
+                            metaStore.put(buildMeta(provider, model, promptSnippet, page, "single"));
+                        }
+                        done++;
+                        synchronized (this) {
+                            t.progress = done * 100 / total;
+                            t.translateProgress = t.progress;
+                            notifyChanged();
+                        }
+                    }
+                }
+
+                synchronized (this) {
+                    if (t.state != TranslationTaskInfo.State.Canceled) {
+                        t.state = TranslationTaskInfo.State.Completed;
+                        t.progress = 100;
+                        t.translateProgress = 100;
+                    }
+                    if (currentJobId != null && currentJobId.equals(t.jobId)) {
+                        currentJobId = null;
+                        currentIsLlm = false;
+                    }
+                    Log.i("TranslationQueue", "LLM complete: " + t.title + " pages=" + found + " state=" + t.state);
+                    notifyChanged();
+                    startNextWaiting();
+                }
+            } catch (Exception ignored) {}
+        }).start();
+    }
+
+    private int processBatchMode(TranslationTaskInfo t, Provider provider, String model, String basePrompt,
+                                  String promptSnippet,
+                                  List<File> pageFiles, List<Integer> pageNumbers, UniFile translated,
+                                  File tempDir, Glossary glossary, TranslationMetaStore metaStore,
+                                  int total, int found) {
+        int maxPages = 6;
+        List<BatchComposer.Batch> batches = BatchComposer.plan(pageFiles, toIntArray(pageNumbers),
+                provider.getMaxImagePixels(), maxPages);
+        Log.i("TranslationQueue", "LLM batch planned " + batches.size() + " batches, maxDim=" + (long) Math.sqrt(provider.getMaxImagePixels()));
+        int done = 0;
+        int batchIdx = 0;
+        for (BatchComposer.Batch batch : batches) {
+            batchIdx++;
+            if (t.state == TranslationTaskInfo.State.Canceled) break;
+            int batchCount = batch.files.size();
+            Log.i("TranslationQueue", "LLM batch[" + batchIdx + "/" + batches.size() + "] pages " + batch.startPage + "-" + batch.endPage + " (" + batchCount + " pages) canvas=" + batch.layout.canvasW + "x" + batch.layout.canvasH);
+            String batchPrompt = PlotSummary.buildBatchPrompt(basePrompt, glossary, batch.startPage, batch.endPage);
+            ImageTextResult result = null;
+            for (int retry = 0; retry < 2 && result == null; retry++) {
+                if (t.state == TranslationTaskInfo.State.Canceled) break;
+                if (retry > 0) Log.w("TranslationQueue", "LLM batch[" + batchIdx + "] retry " + retry);
+                result = generateImageSyncWithText(provider, model, batchPrompt, batch.files);
+            }
+            if (result != null && result.image != null && result.image.length > 0) {
+                Log.i("TranslationQueue", "LLM batch[" + batchIdx + "] API success, image=" + result.image.length + " bytes, splits=" + batchCount);
+                if (Settings.getBoolean("save_debug_merged", false) && batchCount > 1) {
+                    saveDebugMergedImage(translated, result.image, batch);
+                }
+                if (batchCount == 1) {
+                    int page = pageNumbers.get(done);
+                    String outName = String.format(Locale.US, "%08d", page) + ".png";
+                    writeTranslatedFile(translated, outName, result.image);
+                    metaStore.put(buildMeta(provider, model, promptSnippet, page, "batch"));
+                    done++;
+                    synchronized (this) {
+                        t.progress = done * 100 / total;
+                        t.translateProgress = t.progress;
+                        notifyChanged();
+                    }
+                } else {
+                    List<byte[]> splitPages = ImageGrid.split(result.image, batch.layout);
+                    for (int i = 0; i < batchCount && i < splitPages.size(); i++) {
+                        int page = pageNumbers.get(done);
+                        byte[] pagePng = splitPages.get(i);
+                        if (pagePng != null && pagePng.length > 0) {
+                            String outName = String.format(Locale.US, "%08d", page) + ".png";
+                            writeTranslatedFile(translated, outName, pagePng);
+                            metaStore.put(buildMeta(provider, model, promptSnippet, page, "batch"));
+                        }
+                        done++;
+                        synchronized (this) {
+                            t.progress = done * 100 / total;
+                            t.translateProgress = t.progress;
+                            notifyChanged();
+                        }
+                    }
+                }
+                if (result.text != null && !result.text.isEmpty()) {
+                    GlossaryExtractor.updateGlossary(glossary, result.text);
+                    Log.d("TranslationQueue", "LLM batch glossary updated from AI response: " + result.text);
+                } else {
+                    glossary.save();
+                }
+            } else {
+                Log.e("TranslationQueue", "LLM batch[" + batchIdx + "] FAILED pages " + batch.startPage + "-" + batch.endPage + ", skip to fallback");
+                break;
+            }
+        }
+        return done;
+    }
+
+    private static void runGlossaryAnalysis(Provider provider, List<File> pageFiles, int total,
+                                              String analysisMode, Glossary glossary) {
+        if ("none".equals(analysisMode) || pageFiles.isEmpty()) return;
+
+        List<File> samples;
+        switch (analysisMode) {
+            case "chunk_one":
+                samples = sampleByChunk(pageFiles);
+                break;
+            case "random":
+                samples = sampleRandom(pageFiles, total);
+                break;
+            case "all":
+                samples = new ArrayList<>(pageFiles);
+                break;
+            default:
+                samples = sampleByChunk(pageFiles);
+                break;
+        }
+
+        if (samples.isEmpty()) return;
+        String prompt = "你是漫画翻译的术语分析助手。请观察这几页漫画图片，列出所有出现的角色名、专有名词，并提供对应的中文翻译。格式如下：\n原名1->译名1\n原名2->译名2\n如果图片中没有可识别的角色名，回复\"无\"。";
+        final CountDownLatch latch = new CountDownLatch(1);
+        AiClient.analyzeImages(provider, provider.selectedChatModel, samples, prompt, (text, e) -> {
+            if (text != null && !text.isEmpty()) {
+                GlossaryExtractor.updateGlossary(glossary, text);
+                Log.d("TranslationQueue", "Glossary analysis updated: " + text);
+            }
+            latch.countDown();
+        });
+        try { latch.await(60, TimeUnit.SECONDS); } catch (InterruptedException ignored) {}
+    }
+
+    private static List<File> sampleByChunk(List<File> pageFiles) {
+        List<File> samples = new ArrayList<>();
+        int n = pageFiles.size();
+        if (n <= 4) { samples.addAll(pageFiles); return samples; }
+        int maxSamples = 6;
+        int chunkSize = Math.max(1, n / maxSamples);
+        for (int i = 0; i < n && samples.size() < maxSamples; i += chunkSize) {
+            samples.add(pageFiles.get(i));
+        }
+        if (!samples.contains(pageFiles.get(n - 1))) {
+            samples.add(pageFiles.get(n - 1));
+        }
+        return samples;
+    }
+
+    private static List<File> sampleRandom(List<File> pageFiles, int total) {
+        List<File> samples = new ArrayList<>();
+        if (total <= 4) { samples.addAll(pageFiles); return samples; }
+        java.util.Random rng = new java.util.Random(total);
+        int count = Math.min(5, total);
+        java.util.Set<Integer> picked = new java.util.HashSet<>();
+        while (picked.size() < count) {
+            int idx = rng.nextInt(total);
+            if (picked.add(idx)) samples.add(pageFiles.get(idx));
+        }
+        return samples;
+    }
+
+    private static void saveDebugMergedImage(UniFile translated, byte[] data, BatchComposer.Batch batch) {
+        try {
+            UniFile infoDir = translated.findFile("info");
+            if (infoDir == null || !infoDir.exists()) infoDir = translated.createDirectory("info");
+            String name = "merged_p" + batch.startPage + "-" + batch.endPage + ".png";
+            UniFile out = infoDir.findFile(name);
+            if (out == null || !out.exists()) out = infoDir.createFile(name);
+            OutputStream os = out.openOutputStream();
+            try { os.write(data); os.flush(); } finally { os.close(); }
+        } catch (Exception e) {
+            Log.e("TranslationQueue", "saveDebugMergedImage failed", e);
+        }
+    }
+
+    private static int[] toIntArray(List<Integer> list) {
+        int[] arr = new int[list.size()];
+        for (int i = 0; i < list.size(); i++) arr[i] = list.get(i);
+        return arr;
+    }
+
+    private static void writeTranslatedFile(UniFile translated, String name, byte[] data) {
+        try {
+            UniFile out = translated.findFile(name);
+            if (out == null || !out.exists()) out = translated.createFile(name);
+            OutputStream os = out.openOutputStream();
+            try {
+                os.write(data);
+                os.flush();
+            } finally {
+                try { os.close(); } catch (Exception ignored) {}
+            }
+        } catch (Exception e) {
+            Log.e("TranslationQueue", "writeTranslatedFile failed: " + name, e);
+        }
+    }
+
+    private static TranslationMeta buildMeta(Provider p, String model, String promptSnippet, int page, String mode) {
+        TranslationMeta m = new TranslationMeta();
+        m.page = page;
+        m.providerId = p.id;
+        m.providerName = p.name;
+        m.imageModel = model;
+        m.chatModel = p.selectedChatModel != null ? p.selectedChatModel : "";
+        m.mode = mode;
+        m.timestamp = System.currentTimeMillis();
+        m.prompt = promptSnippet;
+        return m;
+    }
+
+    private synchronized void startNextWaiting() {
+        if (currentJobId != null) return;
+        for (TranslationTaskInfo t : list) {
+            if (t.state == TranslationTaskInfo.State.Waiting) {
+                if (t.singlePage) {
+                    startSinglePageSafely(t);
+                } else {
+                    startNextSafely(t);
+                }
+                return;
+            }
+        }
+    }
+
+    private static int findMaxPageInDir(UniFile dir) {
+        try {
+            if (dir == null || !dir.exists()) return 0;
+            UniFile[] files = dir.listFiles();
+            if (files == null) return 0;
+            int max = 0;
+            for (UniFile f : files) {
+                String n = f.getName();
+                if (n == null || f.isDirectory() || "translated".equals(n)) continue;
+                String num = extractPageNum(n);
+                if (num != null) {
+                    try { int p = Integer.parseInt(num); if (p > max) max = p; } catch (Exception ignored) {}
+                }
+            }
+            return max;
+        } catch (Exception e) { return 0; }
+    }
+
+    private static String extractPageNum(String name) {
+        if (name == null) return null;
+        for (int i = 0; i < name.length(); i++) {
+            if (Character.isDigit(name.charAt(i))) {
+                int start = i;
+                while (i < name.length() && Character.isDigit(name.charAt(i))) i++;
+                if (i - start >= 4) return name.substring(start, start + Math.min(i - start, 8));
+            }
+        }
+        return null;
+    }
+
+    private static File findSourceFileForPage(UniFile dir, int page, File tempDir) {
+        try {
+            if (dir == null || !dir.exists()) return null;
+            String pageNum = String.format(Locale.US, "%08d", page);
+            UniFile[] files = dir.listFiles();
+            if (files == null) return null;
+            for (UniFile f : files) {
+                String n = f.getName();
+                if (n == null) continue;
+                if ("translated".equals(n)) continue;
+                if (f.isDirectory()) continue;
+                if (n.contains(pageNum)) {
+                    Uri u = f.getUri();
+                    if (UniFile.isFileUri(u)) {
+                        return new File(u.getPath());
+                    } else {
+                        File tmp = new File(tempDir, n);
+                        InputStream is = f.openInputStream();
+                        FileOutputStream fos = new FileOutputStream(tmp);
+                        try {
+                            byte[] buf = new byte[8192];
+                            int r;
+                            while ((r = is.read(buf)) != -1) fos.write(buf, 0, r);
+                            fos.flush();
+                        } finally {
+                            try { is.close(); } catch (Exception ignored) {}
+                            try { fos.close(); } catch (Exception ignored) {}
+                        }
+                        return tmp;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private static byte[] generateImageSync(Provider provider, String model, String prompt, File image) {
+        return generateImageSync(provider, model, prompt, Collections.singletonList(image));
+    }
+
+    private static byte[] generateImageSync(Provider provider, String model, String prompt, List<File> images) {
+        final byte[][] result = new byte[1][];
+        final CountDownLatch latch = new CountDownLatch(1);
+        AiClient.generateImage(provider, model, prompt, images, (png, e) -> {
+            result[0] = png;
+            latch.countDown();
+        });
+        try {
+            if (!latch.await(300, TimeUnit.SECONDS)) return null;
+        } catch (InterruptedException ie) {
+            return null;
+        }
+        return result[0];
+    }
+
+    private static class ImageTextResult {
+        byte[] image;
+        String text;
+    }
+
+    private static ImageTextResult generateImageSyncWithText(Provider provider, String model, String prompt, List<File> images) {
+        final ImageTextResult out = new ImageTextResult();
+        final CountDownLatch latch = new CountDownLatch(1);
+        AiClient.generateImageWithText(provider, model, prompt, images, (png, text, e) -> {
+            out.image = png;
+            out.text = text;
+            latch.countDown();
+        });
+        try {
+            if (!latch.await(300, TimeUnit.SECONDS)) return null;
+        } catch (InterruptedException ie) {
+            return null;
+        }
+        return out.image != null ? out : null;
     }
 
     private static void compressDirToZip(UniFile srcDir, File outZip) throws Exception {
@@ -437,6 +900,7 @@ public class TranslationQueueManager {
     public synchronized List<TranslationTaskInfo> getList() { return Collections.unmodifiableList(list); }
 
     public synchronized String getCurrentJobId() { return currentJobId; }
+    public synchronized boolean isCurrentLlm() { return currentIsLlm; }
 
     public synchronized void addListener(Listener l) { listeners.add(l); }
     public synchronized void removeListener(Listener l) { listeners.remove(l); }
@@ -596,6 +1060,7 @@ public class TranslationQueueManager {
             }
             t.downloading = false;
             notifyChanged();
+            startNextWaiting();
         } catch (Exception ignored) {}
     }
 
@@ -616,6 +1081,7 @@ public class TranslationQueueManager {
                 o.put("pageIndex", t.pageIndex);
                 o.put("rangeStart", t.rangeStart);
                 o.put("rangeEnd", t.rangeEnd);
+                o.put("useLlm", t.useLlm);
                 o.put("downloaded", t.downloaded);
                 o.put("processProgress", t.processProgress);
                 o.put("translateProgress", t.translateProgress);
@@ -663,6 +1129,12 @@ public class TranslationQueueManager {
                 t.pageIndex = o.optInt("pageIndex", -1);
                 t.rangeStart = o.optInt("rangeStart", 0);
                 t.rangeEnd = o.optInt("rangeEnd", 0);
+                t.useLlm = o.optBoolean("useLlm", false);
+                // LLM tasks have no server jobId to resume polling; reset unfinished ones to Waiting
+                if (t.useLlm && t.state == TranslationTaskInfo.State.Translating) {
+                    t.state = TranslationTaskInfo.State.Waiting;
+                    if (currentJobId != null && currentJobId.equals(t.jobId)) currentJobId = null;
+                }
                 t.downloaded = o.optBoolean("downloaded", false);
                 t.processProgress = o.optInt("processProgress", 0);
                 t.translateProgress = o.optInt("translateProgress", 0);

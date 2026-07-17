@@ -90,6 +90,16 @@
     <string name="downloads">Downloads</string>
     <string name="added_to_translation_queue">Added to translation queue</string>
     <string name="already_in_translation_queue">Already in translation queue</string>
+    <string name="translation_method_choose" translatable="false">Choose translation method</string>
+    <string name="translation_default_method">Default translation method</string>
+    <string name="translation_default_method_local">Local (upload to PC server)</string>
+    <string name="translation_default_method_llm">LLM (on-device direct call)</string>
+    <string name="translation_choose_range">Enter page range</string>
+    <string name="text_translation_provider_title">Text Translation Model</string>
+    <string name="comment_translate_btn">Translate</string>
+    <string name="translation_method_llm">LLM translate</string>
+    <string name="translation_method_legacy">Local translation</string>
+    <string name="added_to_llm_queue">Added to LLM translation queue</string>
     <string name="translation_config">Translation Config</string>
     <string name="translation_config_test">Test Connection</string>
     <string name="translation_base_host">Server Host</string>
@@ -582,6 +592,7 @@
     <string name="page_menu_toggle_translation">Toggle translated/original</string>
     <string name="page_menu_force_translate_gallery">Force translate gallery</string>
     <string name="page_menu_llm_translate_this_page">Translate this page via LLM</string>
+    <string name="page_menu_translation_info">Translation Info</string>
 
     <string name="settings_eh">EH</string>
     <string name="settings_eh_sign_out">Sign out</string>
@@ -1091,8 +1102,53 @@
     <string name="gemini_model_custom">Custom Model</string>
     <string name="gemini_model_default">gemini-3-pro-image-preview</string>
     <string name="gemini_common_prompt">Prompt</string>
+    <string name="target_language_title">Target Language</string>
+    <string name="save_debug_merged_title">Save merged images for debug</string>
+    <string name="save_debug_merged_on">Merged images saved to translated/info/</string>
+    <string name="save_debug_merged_off">Off</string>
     <string name="gemini_api_key">API Key</string>
     <string name="settings_translation">Translation Settings</string>
+
+    <!-- AI Provider Settings -->
+    <string name="settings_ai_provider">AI Model Settings</string>
+    <string name="ai_provider_add">Add Provider</string>
+    <string name="ai_provider_edit">Edit Provider</string>
+    <string name="ai_provider_name">Provider Name</string>
+    <string name="ai_provider_base_url">Base URL</string>
+    <string name="ai_provider_api_key">API Key</string>
+    <string name="ai_provider_protocol">Protocol</string>
+    <string name="ai_provider_protocol_openai">OpenAI Compatible</string>
+    <string name="ai_provider_protocol_gemini">Gemini</string>
+    <string name="ai_provider_fetch_models">Fetch Models</string>
+    <string name="ai_provider_select_model">Image Model</string>
+    <string name="ai_provider_chat_model">Chat Model (context/analysis)</string>
+    <string name="ai_provider_max_pixels">Max Image Pixels (e.g. 3840x2160)</string>
+    <string name="ai_provider_enable">Enable</string>
+    <string name="ai_provider_enabled">Enabled</string>
+    <string name="ai_provider_disabled">Disabled</string>
+    <string name="ai_fetching_models">Fetching models…</string>
+    <string name="ai_no_models">No models, please fetch</string>
+    <string name="ai_fetch_ok">Fetched %1$d models</string>
+    <string name="ai_fetch_fail">Failed: %1$s</string>
+    <string name="ai_batch_mode_title">Batch Mode (Merge Grid)</string>
+    <string name="ai_batch_mode_summary">Merge multiple pages into one big image to save cost and keep story coherent</string>
+    <string name="ai_batch_mode_single">Single page (high quality, higher cost)</string>
+    <string name="ai_provider_delete">Delete Provider</string>
+    <string name="ai_provider_delete_confirm">Delete this provider?</string>
+    <string name="ai_provider_builtin">Built-in</string>
+    <string name="ai_provider_custom">Custom</string>
+    <string name="ai_provider_save">Save</string>
+    <string name="ai_provider_current_model">Current: %1$s</string>
+    <string name="ai_provider_no_model">No model selected</string>
+    <string name="ai_default_provider_title">Default Provider</string>
+    <string name="ai_provider_name_required">Name required</string>
+    <string name="ai_provider_url_required">Base URL required</string>
+    <string name="ai_provider_default_name">Custom</string>
+    <string name="ai_analysis_mode_title">Glossary Analysis Mode</string>
+    <string name="ai_analysis_mode_chunk_one">One per chunk</string>
+    <string name="ai_analysis_mode_random">Random sample</string>
+    <string name="ai_analysis_mode_all">Every page (vision)</string>
+    <string name="ai_analysis_mode_none">None (skip analysis)</string>
 
     <!-- TagSelectActivity -->
     <string name="tag_search_entrance">Tag Selector</string>

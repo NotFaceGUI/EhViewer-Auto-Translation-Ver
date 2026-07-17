@@ -1,13 +1,14 @@
 {
-  "version": "2.0.2.2",
-  "versionCode": 111,
+  "version": "2.0.2.3",
+  "versionCode": 115,
   "mustUpdate": false,
   "updateContent": {
     "fileDownloadUrl": "",
-    "title": "新版发布2.0.2.2",
+    "title": "2.0.2.3",
     "content": [
-      "修复了浏览历史未正确保存的问题",
-      "修复评论时输入框被键盘遮挡的问题"
+      "翻译配置新增文本翻译模型选择",
+      "详情页/评论页支持点击翻译标题和评论",
+      "评论翻译保留原始链接格式",
     ]
   }
 }

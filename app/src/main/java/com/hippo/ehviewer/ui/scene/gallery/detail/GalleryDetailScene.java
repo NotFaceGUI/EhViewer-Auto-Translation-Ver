@@ -42,6 +42,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RatingBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -104,6 +105,8 @@ import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListScene;
 import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListSceneDialog;
 import com.hippo.ehviewer.ui.scene.history.HistoryScene;
 import com.hippo.ehviewer.util.ClipboardUtil;
+import com.hippo.ehviewer.translation.CommentTranslationUtil;
+import com.hippo.ehviewer.ui.fragment.TranslationSettingsFragment;
 import com.hippo.ehviewer.widget.ArchiverDownloadProgress;
 import com.hippo.ehviewer.widget.GalleryRatingBar;
 import com.hippo.lib.yorozuya.AssertUtils;
@@ -194,6 +197,8 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
     private LoadImageView mThumb;
     @Nullable
     private TextView mTitle;
+    private boolean mTitleTranslated = false;
+    private String mTitleOriginal = null;
     @Nullable
     private TextView mUploader;
     @Nullable
@@ -584,6 +589,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
         mHaveNewVersion.setOnClickListener(this);
         mRead.setOnClickListener(this);
         mTitle.setOnClickListener(this);
+        mTitle.setOnLongClickListener(this);
 
         mUploader.setOnLongClickListener(this);
 
@@ -1176,7 +1182,79 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             c.setMaxLines(5);
             c.setText(Html.fromHtml(comment.comment,
                     new URLImageGetter(c, EhApplication.getConaco(context)), null));
+            // 翻译按钮（右下角）
+            TextView transBtn = new TextView(context);
+            transBtn.setText("译");
+            transBtn.setTextColor(0xFF4FC3F7);
+            transBtn.setTextSize(12);
+            transBtn.setPadding(8, 4, 0, 0);
+            RelativeLayout.LayoutParams btnLp = new RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.WRAP_CONTENT,
+                    RelativeLayout.LayoutParams.WRAP_CONTENT);
+            btnLp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+            btnLp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+            btnLp.setMargins(0, 0, 0, 4);
+            ((ViewGroup) v).addView(transBtn, btnLp);
+            transBtn.setOnClickListener(view -> {
+                if (transBtn.getTag() instanceof String) {
+                    // 当前显示译文，切回原文
+                    c.setText(Html.fromHtml(comment.comment,
+                            new URLImageGetter(c, EhApplication.getConaco(context)), null));
+                    transBtn.setTag(null);
+                    return;
+                }
+                transBtn.setText("⏳");
+                CommentTranslationUtil.translatePreserveHtml(
+                        comment.comment,
+                        TranslationSettingsFragment.getTargetLanguage(),
+                        (text, e) -> {
+                            handler.post(() -> {
+                                transBtn.setText("译");
+                                if (e != null || text == null || text.isEmpty()) return;
+                                transBtn.setTag(text);
+                                c.setText(Html.fromHtml(text,
+                                        new URLImageGetter(c, EhApplication.getConaco(context)), null));
+                            });
+                        });
+            });
         }
+    }
+
+    private void toggleTitleTranslation() {
+        if (mTitle == null || mGalleryDetail == null || mGalleryDetail.title == null) return;
+        if (mTitleTranslated) {
+            mTitle.setText(mTitleOriginal != null ? mTitleOriginal : mGalleryDetail.title);
+            mTitleTranslated = false;
+            return;
+        }
+        mTitleOriginal = mGalleryDetail.title;
+        mTitle.setText("⏳ " + mTitleOriginal);
+        String targetLang = TranslationSettingsFragment.getTargetLanguage();
+        String systemPrompt = "You will receive a manga/doujinshi gallery title line which may contain "
+                + "event codes like (C100), circle names like [circle], author names like (author), "
+                + "series names, tags, etc. "
+                + "Translate ONLY the actual manga/doujinshi title portion into " + targetLang + ". "
+                + "Keep everything else (event codes, circle/group names in [], author names in (), "
+                + "series names, tags, file format suffixes) EXACTLY as-is without any change. "
+                + "Output the complete original line with only the title words replaced by their translation. "
+                + "Do not add any explanation.";
+        CommentTranslationUtil.translate(
+                mTitleOriginal, targetLang, systemPrompt,
+                (text, e) -> {
+                    if (e != null || text == null || text.isEmpty()) {
+                        handler.post(() -> {
+                            if (mTitle != null) mTitle.setText(mTitleOriginal);
+                            mTitleTranslated = false;
+                        });
+                        return;
+                    }
+                    handler.post(() -> {
+                        if (mTitle != null) {
+                            mTitle.setText(text);
+                            mTitleTranslated = true;
+                        }
+                    });
+                });
     }
 
     @SuppressLint("SetTextI18n")
@@ -1582,8 +1660,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             }
         } else if (mTitle == v) {
             if (mGalleryDetail != null && mGalleryDetail.title != null) {
-                ClipboardUtil.copyText(mGalleryDetail.title);
-                Toast.makeText(getContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
+                toggleTitleTranslation();
             }
         } else {
             Object o = v.getTag(R.id.tag);
@@ -1686,6 +1763,12 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
 
         if (mUploader == v) {
             showFilterUploaderDialog();
+        } else if (mTitle == v) {
+            if (mGalleryDetail != null && mGalleryDetail.title != null) {
+                ClipboardUtil.copyText(mGalleryDetail.title);
+                Toast.makeText(getContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
+            }
+            return true;
         } else if (mDownload == v) {
 //            GalleryInfo galleryInfo = getGalleryInfo();
 //            if (galleryInfo != null) {

@@ -27,9 +27,7 @@ public class TranslationQueuePoller implements Runnable {
         if (!running) return;
 //        Log.d(TAG, "tick");
         String jid = TranslationQueueManager.getInstance().getCurrentJobId();
-        if (jid == null) {
-            // Try to find any task with jobId
-            // Fallback: schedule next tick without stopping
+        if (jid == null || TranslationQueueManager.getInstance().isCurrentLlm()) {
             handler.postDelayed(this, intervalMs);
             return;
         }

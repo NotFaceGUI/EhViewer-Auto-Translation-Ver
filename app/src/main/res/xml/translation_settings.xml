@@ -17,33 +17,41 @@
         android:title="@string/translation_config_test"
         app:allowDividerAbove="true" />
 
-    <Preference
-        android:key="gemini_base_url"
-        android:title="@string/gemini_base_url"
-        app:allowDividerAbove="true" />
-
-    <com.hippo.preference.ListPreference
-        android:defaultValue="default"
-        android:key="gemini_model_select"
-        android:summary="%s"
-        android:title="@string/gemini_model_select"
+    <ListPreference
+        android:defaultValue="local"
+        android:entries="@array/default_translation_method_entries"
+        android:entryValues="@array/default_translation_method_values"
+        android:key="translation_default_method"
+        android:title="@string/translation_default_method"
         app:allowDividerAbove="true"
-        app:entries="@array/gemini_model_entries"
-        app:entryValues="@array/gemini_model_entry_values" />
+        app:useSimpleSummaryProvider="true" />
 
     <Preference
-        android:key="gemini_api_key"
-        android:title="@string/gemini_api_key"
+        android:key="ai_model_setting"
+        android:title="@string/settings_ai_provider"
+        android:summary=""
         app:allowDividerAbove="true" />
 
     <Preference
-        android:key="gemini_model_custom"
-        android:title="@string/gemini_model_custom"
+        android:key="text_translation_provider"
+        android:title="@string/text_translation_provider_title"
+        app:allowDividerAbove="true" />
+
+    <Preference
+        android:key="target_language_setting"
+        android:title="@string/target_language_title"
         app:allowDividerAbove="true" />
 
     <Preference
         android:key="gemini_common_prompt"
         android:title="@string/gemini_common_prompt"
         app:allowDividerAbove="true" />
+
+    <com.hippo.preference.SwitchPreference
+        android:defaultValue="false"
+        android:key="save_debug_merged"
+        android:title="@string/save_debug_merged_title"
+        app:summaryOff="@string/save_debug_merged_off"
+        app:summaryOn="@string/save_debug_merged_on" />
 
 </PreferenceScreen>

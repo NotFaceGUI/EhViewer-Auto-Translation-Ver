@@ -1,31 +1,22 @@
 package com.hippo.ehviewer.translation;
 
-import android.util.Base64;
 import android.util.Log;
 
 import com.hippo.ehviewer.Settings;
+import com.hippo.ehviewer.translation.provider.AiClient;
+import com.hippo.ehviewer.translation.provider.Provider;
+import com.hippo.ehviewer.translation.provider.ProviderStore;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.nio.charset.StandardCharsets;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import android.util.Log;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 public class GeminiApi {
     private static final String TAG = "GeminiApi";
 
     public static String getModel() {
+        Provider p = ProviderStore.getInstance().getDefaultImageProvider();
+        if (p != null && p.selectedModel != null && !p.selectedModel.isEmpty()) return p.selectedModel;
         String sel = Settings.getString("gemini_model_select", "default");
         if ("custom".equals(sel)) {
             String cust = Settings.getString("gemini_model_custom", "");
@@ -35,14 +26,36 @@ public class GeminiApi {
     }
 
     public static String getBaseUrl() {
+        Provider p = ProviderStore.getInstance().getDefaultImageProvider();
+        if (p != null && p.baseUrl != null && !p.baseUrl.isEmpty()) return p.baseUrl;
         return Settings.getString("gemini_base_url", "https://generativelanguage.googleapis.com");
     }
 
     public static String getCommonPrompt() {
-        return Settings.getString("gemini_common_prompt", "在保留原始格式的同时，将图片中的文本翻译为中文");
+        String lang = getTargetLang();
+        String defaultPrompt =
+                "你是一个专业的漫画翻译助手。请将图片中的所有文字翻译为" + lang + "，严格遵循以下规则：\n" +
+                "1. 保留原图构图、画风、线条、颜色、阴影、网点和所有非文字内容，不做任何改动\n" +
+                "2. 翻译所有文字：对话框、旁白、注释、拟声词、艺术字、标题、手写体、标志等全部文本\n" +
+                "3. 拟声词和艺术字必须保持原风格（大小、颜色、倾斜度、变形、透视），用" + lang + "象声词或等效表达替换\n" +
+                "4. 对话框内文字翻译为自然流畅的" + lang + "，符合角色性格和上下文语境\n" +
+                "5. 译文长度无需与原文字数匹配，翻译本身就存在语言长度差异，适当调整字号适配即可，绝不能自行添加原文没有的句子或内容\n" +
+                "6. 不要添加任何原图中没有的内容，不要添加解释或注释\n" +
+                "7. 翻译后的文字放置在原文字位置，覆盖原文字，保持原文的书写方向（竖排、横排、换行）和排版方式\n" +
+                "8. 输出图片分辨率与输入完全一致，不要缩放或裁剪\n" +
+                "9. 如果原图没有文字，原样返回不做修改";
+        String stored = Settings.getString("gemini_common_prompt", "");
+        if (stored != null && stored.length() > 10) return stored;
+        return defaultPrompt;
+    }
+
+    private static String getTargetLang() {
+        return Settings.getString("target_language_setting", "简体中文");
     }
 
     public static String getApiKey() {
+        Provider p = ProviderStore.getInstance().getDefaultImageProvider();
+        if (p != null && p.apiKey != null && !p.apiKey.isEmpty()) return p.apiKey;
         return Settings.getString("gemini_api_key", "");
     }
 
@@ -50,273 +63,27 @@ public class GeminiApi {
         void onResult(byte[] imagePng, Exception e);
     }
 
-    private static final OkHttpClient CLIENT = new OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .build();
-
     public static void generateImageAsync(GenerateCallback cb) {
         generateImageAsync(getCommonPrompt(), cb);
     }
 
     public static void generateImageAsync(String prompt, GenerateCallback cb) {
-        try {
-            String base = getBaseUrl();
-            String model = getModel();
-            String apiKey = getApiKey();
-            String url = base + "/v1beta/models/" + model + ":generateContent";
-
-            JSONArray parts = new JSONArray();
-            JSONObject text = new JSONObject();
-            text.put("text", prompt == null ? "" : prompt);
-            parts.put(text);
-
-            JSONObject content = new JSONObject();
-            content.put("role", "user");
-            content.put("parts", parts);
-
-            JSONArray contents = new JSONArray();
-            contents.put(content);
-
-            JSONObject body = new JSONObject();
-            body.put("contents", contents);
-
-            MediaType MT_JSON = MediaType.parse("application/json; charset=utf-8");
-            RequestBody reqBody = RequestBody.create(MT_JSON, body.toString().getBytes(StandardCharsets.UTF_8));
-            Request req = new Request.Builder().url(url).addHeader("x-goog-api-key", apiKey).post(reqBody).build();
-            Log.d(TAG, "generate_image request url=" + url + ", model=" + model);
-            CLIENT.newCall(req).enqueue(new okhttp3.Callback() {
-                @Override public void onFailure(okhttp3.Call call, java.io.IOException e) {
-                    Log.e(TAG, "generate_image error", e);
-                    if (cb != null) cb.onResult(null, e);
-                }
-                @Override public void onResponse(okhttp3.Call call, Response response) {
-                    try {
-                        String s = response.body() != null ? response.body().string() : "{}";
-                        Log.d(TAG, "generate_image response code=" + response.code());
-                        Log.d(TAG, "generate_image body snippet=" + (s.length() > 1024 ? s.substring(0, 1024) + "..." : s));
-                        JSONObject json = new JSONObject(s);
-                        JSONArray candidates = json.optJSONArray("candidates");
-                        if (candidates != null && candidates.length() > 0) {
-                            JSONObject c0 = candidates.optJSONObject(0);
-                            JSONObject cont = c0 != null ? c0.optJSONObject("content") : null;
-                            JSONArray rparts = cont != null ? cont.optJSONArray("parts") : null;
-                            if (rparts != null) {
-                                for (int i = 0; i < rparts.length(); i++) {
-                                    JSONObject p = rparts.optJSONObject(i);
-                                    JSONObject inline = p != null ? p.optJSONObject("inlineData") : null;
-                                    if (inline == null) inline = p != null ? p.optJSONObject("inline_data") : null;
-                                    if (inline != null) {
-                                        String data = inline.optString("data", null);
-                                        if (data != null) {
-                                            byte[] png = Base64.decode(data, Base64.DEFAULT);
-                                            if (cb != null) cb.onResult(png, null);
-                                            return;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        Log.w(TAG, "generate_image no inline image in response");
-                        if (cb != null) cb.onResult(null, new RuntimeException("no_image"));
-                    } catch (Exception ex) {
-                        Log.e(TAG, "generate_image parse error", ex);
-                        if (cb != null) cb.onResult(null, ex);
-                    } finally {
-                        try { response.close(); } catch (Exception ignored) {}
-                    }
-                }
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "generate_image exception before request", e);
-            if (cb != null) cb.onResult(null, e);
-        }
+        generateImageAsync(prompt, (List<File>) null, cb);
     }
 
     public static void generateImageAsync(String prompt, File image, GenerateCallback cb) {
-        try {
-            String base = getBaseUrl();
-            String model = getModel();
-            String apiKey = getApiKey();
-            String url = base + "/v1beta/models/" + model + ":generateContent";
-
-            JSONArray parts = new JSONArray();
-            JSONObject text = new JSONObject();
-            text.put("text", prompt == null ? "" : prompt);
-            parts.put(text);
-            JSONObject inline = new JSONObject();
-            inline.put("mime_type", guessMimeType(image != null ? image.getName() : null));
-            inline.put("data", readBase64(image));
-            JSONObject inlinePart = new JSONObject();
-            inlinePart.put("inline_data", inline);
-            parts.put(inlinePart);
-
-            JSONObject content = new JSONObject();
-            content.put("role", "user");
-            content.put("parts", parts);
-
-            JSONArray contents = new JSONArray();
-            contents.put(content);
-
-            JSONObject body = new JSONObject();
-            body.put("contents", contents);
-
-            MediaType MT_JSON = MediaType.parse("application/json; charset=utf-8");
-            RequestBody reqBody = RequestBody.create(MT_JSON, body.toString().getBytes(StandardCharsets.UTF_8));
-            Request req = new Request.Builder().url(url).addHeader("x-goog-api-key", apiKey).post(reqBody).build();
-            Log.d(TAG, "generate_image request url=" + url + ", model=" + model + ", image=" + (image != null ? image.getName() : "null"));
-            CLIENT.newCall(req).enqueue(new okhttp3.Callback() {
-                @Override public void onFailure(okhttp3.Call call, java.io.IOException e) {
-                    Log.e(TAG, "generate_image error", e);
-                    if (cb != null) cb.onResult(null, e);
-                }
-                @Override public void onResponse(okhttp3.Call call, Response response) {
-                    try {
-                        String s = response.body() != null ? response.body().string() : "{}";
-                        Log.d(TAG, "generate_image response code=" + response.code());
-                        Log.d(TAG, "generate_image body snippet=" + (s.length() > 1024 ? s.substring(0, 1024) + "..." : s));
-                        JSONObject json = new JSONObject(s);
-                        JSONArray candidates = json.optJSONArray("candidates");
-                        if (candidates != null && candidates.length() > 0) {
-                            JSONObject c0 = candidates.optJSONObject(0);
-                            JSONObject cont = c0 != null ? c0.optJSONObject("content") : null;
-                            JSONArray rparts = cont != null ? cont.optJSONArray("parts") : null;
-                            if (rparts != null) {
-                                for (int i = 0; i < rparts.length(); i++) {
-                                    JSONObject p = rparts.optJSONObject(i);
-                                    JSONObject in = p != null ? p.optJSONObject("inlineData") : null;
-                                    if (in == null) in = p != null ? p.optJSONObject("inline_data") : null;
-                                    if (in != null) {
-                                        String data = in.optString("data", null);
-                                        if (data != null) {
-                                            byte[] png = Base64.decode(data, Base64.DEFAULT);
-                                            if (cb != null) cb.onResult(png, null);
-                                            return;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        Log.w(TAG, "generate_image no inline image in response");
-                        if (cb != null) cb.onResult(null, new RuntimeException("no_image"));
-                    } catch (Exception ex) {
-                        Log.e(TAG, "generate_image parse error", ex);
-                        if (cb != null) cb.onResult(null, ex);
-                    } finally {
-                        try { response.close(); } catch (Exception ignored) {}
-                    }
-                }
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "generate_image exception before request", e);
-            if (cb != null) cb.onResult(null, e);
-        }
+        generateImageAsync(prompt, image != null ? Collections.singletonList(image) : null, cb);
     }
 
     public static void generateImageAsync(String prompt, List<File> images, GenerateCallback cb) {
-        try {
-            String base = getBaseUrl();
-            String model = getModel();
-            String apiKey = getApiKey();
-            String url = base + "/v1beta/models/" + model + ":generateContent";
-
-            JSONArray parts = new JSONArray();
-            JSONObject text = new JSONObject();
-            text.put("text", prompt == null ? "" : prompt);
-            parts.put(text);
-            if (images != null) {
-                for (File f : images) {
-                    if (f == null) continue;
-                    JSONObject inline = new JSONObject();
-                    inline.put("mime_type", guessMimeType(f.getName()));
-                    inline.put("data", readBase64(f));
-                    JSONObject inlinePart = new JSONObject();
-                    inlinePart.put("inline_data", inline);
-                    parts.put(inlinePart);
-                }
-            }
-
-            JSONObject content = new JSONObject();
-            content.put("role", "user");
-            content.put("parts", parts);
-
-            JSONArray contents = new JSONArray();
-            contents.put(content);
-
-            JSONObject body = new JSONObject();
-            body.put("contents", contents);
-
-            MediaType MT_JSON = MediaType.parse("application/json; charset=utf-8");
-            RequestBody reqBody = RequestBody.create(MT_JSON, body.toString().getBytes(StandardCharsets.UTF_8));
-            Request req = new Request.Builder().url(url).addHeader("x-goog-api-key", apiKey).post(reqBody).build();
-            Log.d(TAG, "generate_image request url=" + url + ", model=" + model + ", images=" + (images != null ? images.size() : 0));
-            CLIENT.newCall(req).enqueue(new okhttp3.Callback() {
-                @Override public void onFailure(okhttp3.Call call, java.io.IOException e) {
-                    Log.e(TAG, "generate_image error", e);
-                    if (cb != null) cb.onResult(null, e);
-                }
-                @Override public void onResponse(okhttp3.Call call, Response response) {
-                    try {
-                        String s = response.body() != null ? response.body().string() : "{}";
-                        Log.d(TAG, "generate_image response code=" + response.code());
-                        Log.d(TAG, "generate_image body snippet=" + (s.length() > 1024 ? s.substring(0, 1024) + "..." : s));
-                        JSONObject json = new JSONObject(s);
-                        JSONArray candidates = json.optJSONArray("candidates");
-                        if (candidates != null && candidates.length() > 0) {
-                            JSONObject c0 = candidates.optJSONObject(0);
-                            JSONObject cont = c0 != null ? c0.optJSONObject("content") : null;
-                            JSONArray rparts = cont != null ? cont.optJSONArray("parts") : null;
-                            if (rparts != null) {
-                                for (int i = 0; i < rparts.length(); i++) {
-                                    JSONObject p = rparts.optJSONObject(i);
-                                    JSONObject in = p != null ? p.optJSONObject("inlineData") : null;
-                                    if (in == null) in = p != null ? p.optJSONObject("inline_data") : null;
-                                    if (in != null) {
-                                        String data = in.optString("data", null);
-                                        if (data != null) {
-                                            byte[] png = Base64.decode(data, Base64.DEFAULT);
-                                            if (cb != null) cb.onResult(png, null);
-                                            return;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        Log.w(TAG, "generate_image no inline image in response");
-                        if (cb != null) cb.onResult(null, new RuntimeException("no_image"));
-                    } catch (Exception ex) {
-                        Log.e(TAG, "generate_image parse error", ex);
-                        if (cb != null) cb.onResult(null, ex);
-                    } finally {
-                        try { response.close(); } catch (Exception ignored) {}
-                    }
-                }
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "generate_image exception before request", e);
-            if (cb != null) cb.onResult(null, e);
+        Provider p = ProviderStore.getInstance().getDefaultImageProvider();
+        if (p == null) {
+            if (cb != null) cb.onResult(null, new RuntimeException("no_provider_configured"));
+            return;
         }
-    }
-
-    private static String guessMimeType(String name) {
-        String n = name == null ? "" : name.toLowerCase();
-        if (n.endsWith(".png")) return "image/png";
-        if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
-        if (n.endsWith(".webp")) return "image/webp";
-        return "image/*";
-    }
-
-    private static String readBase64(File f) throws Exception {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try (FileInputStream fis = new FileInputStream(f)) {
-            byte[] buf = new byte[8192];
-            int r;
-            while ((r = fis.read(buf)) != -1) {
-                bos.write(buf, 0, r);
-            }
-        }
-        byte[] data = bos.toByteArray();
-        return Base64.encodeToString(data, Base64.NO_WRAP);
+        String model = getModel();
+        AiClient.generateImage(p, model, prompt, images, (png, e) -> {
+            if (cb != null) cb.onResult(png, e);
+        });
     }
 }

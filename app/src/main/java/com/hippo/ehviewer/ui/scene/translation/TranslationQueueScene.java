@@ -1,11 +1,12 @@
 package com.hippo.ehviewer.ui.scene.translation;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.app.Activity;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
@@ -50,7 +51,11 @@ public class TranslationQueueScene extends ToolbarScene {
     }
 
     private final TranslationQueueManager.Listener onQueueChanged = new TranslationQueueManager.Listener() {
-        @Override public void onChanged() { if (adapter != null) adapter.notifyDataSetChanged(); }
+        @Override public void onChanged() {
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (adapter != null) adapter.notifyDataSetChanged();
+            });
+        }
     };
 
     @Override
@@ -93,23 +98,6 @@ public class TranslationQueueScene extends ToolbarScene {
 
     @Override
     public void onNavigationClick(View view) {
-        try {
-            onBackPressed();
-        } catch (Throwable ignored) {}
-        Activity a = getActivity();
-        if (a != null) {
-            a.runOnUiThread(() -> {
-                View content = a.findViewById(android.R.id.content);
-                boolean empty = false;
-                if (content instanceof ViewGroup) {
-                    empty = ((ViewGroup) content).getChildCount() == 0;
-                } else if (content == null) {
-                    empty = true;
-                }
-                if (empty && !a.isFinishing()) {
-                    a.finish();
-                }
-            });
-        }
+        onBackPressed();
     }
 }

@@ -94,7 +94,6 @@ public class TranslationApi {
         MultipartBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("file", img.getName(), fileBody)
                 .addFormDataPart("output_format", "png")
-                .addFormDataPart("timeout_seconds", "1800")
                 .build();
         Request req = new Request.Builder().url(buildBaseUrl() + "/translate").post(body).build();
         try (Response resp = CLIENT.newCall(req).execute()) {

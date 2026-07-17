@@ -33,4 +33,9 @@
 
     </string-array>
 
+    <string-array name="ai_batch_mode_entries">
+        <item>@string/ai_batch_mode_summary</item>
+        <item>@string/ai_batch_mode_single</item>
+    </string-array>
+
 </resources>

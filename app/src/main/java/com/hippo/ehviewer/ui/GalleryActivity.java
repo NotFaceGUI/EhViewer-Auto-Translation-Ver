@@ -97,6 +97,8 @@ import com.hippo.ehviewer.download.DownloadManager;
 import com.hippo.ehviewer.dao.DownloadInfo;
 import com.hippo.ehviewer.translation.TranslationQueueManager;
 import com.hippo.ehviewer.translation.GeminiApi;
+import com.hippo.ehviewer.translation.TranslationMeta;
+import com.hippo.ehviewer.translation.TranslationMetaStore;
 import com.hippo.ehviewer.spider.SpiderDen;
 import com.hippo.app.EditTextDialogBuilder;
 import com.hippo.util.ExceptionUtils;
@@ -1182,13 +1184,40 @@ public class GalleryActivity extends EhActivity implements SeekBar.OnSeekBarChan
         AlertDialog.Builder builder = new AlertDialog.Builder(GalleryActivity.this);
         builder.setTitle(resources.getString(R.string.page_menu_title, page + 1));
 
+        TranslationMetaStore metaStore = mGalleryInfo != null ? new TranslationMetaStore(mGalleryInfo.gid) : null;
+        boolean hasMeta = metaStore != null && metaStore.hasMeta(page);
+
         final CharSequence[] items;
-        items = new CharSequence[]{getString(R.string.page_menu_refresh), getString(R.string.page_menu_share), getString(R.string.page_menu_save), getString(R.string.page_menu_save_to), getString(R.string.page_menu_translate_this_page), getString(R.string.page_menu_toggle_translation), getString(R.string.page_menu_force_translate_gallery), getString(R.string.page_menu_llm_translate_this_page)};
-        pageDialogListener(builder, items, page);
+        if (hasMeta) {
+            items = new CharSequence[]{
+                    getString(R.string.page_menu_refresh),
+                    getString(R.string.page_menu_share),
+                    getString(R.string.page_menu_save),
+                    getString(R.string.page_menu_save_to),
+                    getString(R.string.page_menu_translate_this_page),
+                    getString(R.string.page_menu_toggle_translation),
+                    getString(R.string.page_menu_force_translate_gallery),
+                    getString(R.string.page_menu_llm_translate_this_page),
+                    getString(R.string.page_menu_translation_info)
+            };
+        } else {
+            items = new CharSequence[]{
+                    getString(R.string.page_menu_refresh),
+                    getString(R.string.page_menu_share),
+                    getString(R.string.page_menu_save),
+                    getString(R.string.page_menu_save_to),
+                    getString(R.string.page_menu_translate_this_page),
+                    getString(R.string.page_menu_toggle_translation),
+                    getString(R.string.page_menu_force_translate_gallery),
+                    getString(R.string.page_menu_llm_translate_this_page)
+            };
+        }
+        pageDialogListener(builder, items, page, hasMeta, metaStore);
         builder.show();
     }
 
-    private void pageDialogListener(AlertDialog.Builder builder, CharSequence[] items, int page) {
+    private void pageDialogListener(AlertDialog.Builder builder, CharSequence[] items, int page,
+                                     boolean hasMeta, TranslationMetaStore metaStore) {
         builder.setItems(items, (dialog, which) -> {
             if (mGalleryProvider == null) {
                 return;
@@ -1251,6 +1280,25 @@ public class GalleryActivity extends EhActivity implements SeekBar.OnSeekBarChan
                         neutral.setOnClickListener(v -> {
                             showMaskEditor(page);
                         });
+                    }
+                    break;
+                }
+                case 8: {
+                    if (hasMeta && metaStore != null) {
+                        TranslationMeta meta = metaStore.get(page);
+                        if (meta != null) {
+                            String info = "Provider: " + meta.providerName + "\n"
+                                    + "Image Model: " + meta.imageModel + "\n"
+                                    + (meta.chatModel.isEmpty() ? "" : "Chat Model: " + meta.chatModel + "\n")
+                                    + "Mode: " + meta.mode + "\n"
+                                    + "Time: " + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(new java.util.Date(meta.timestamp)) + "\n"
+                                    + "Prompt: " + meta.prompt;
+                            new AlertDialog.Builder(GalleryActivity.this)
+                                    .setTitle(getString(R.string.page_menu_translation_info) + " (Page " + (page + 1) + ")")
+                                    .setMessage(info)
+                                    .setPositiveButton(android.R.string.ok, null)
+                                    .show();
+                        }
                     }
                     break;
                 }

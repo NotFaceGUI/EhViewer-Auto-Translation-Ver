@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:key="ai_provider_list_category"
+        android:title="@string/settings_ai_provider" />
+
+    <Preference
+        android:key="ai_provider_add"
+        android:title="@string/ai_provider_add"
+        app:allowDividerAbove="true" />
+
+    <PreferenceCategory
+        android:key="ai_global_category"
+        android:title="Global">
+
+        <com.hippo.preference.ListPreference
+            android:key="ai_default_provider"
+            android:title="@string/ai_default_provider_title"
+            app:allowDividerAbove="true" />
+
+        <com.hippo.preference.ListPreference
+            android:defaultValue="true"
+            android:key="ai_batch_mode"
+            android:summary="@string/ai_batch_mode_summary"
+            android:title="@string/ai_batch_mode_title"
+            app:allowDividerAbove="true"
+            app:entries="@array/ai_batch_mode_entries"
+            app:entryValues="@array/ai_batch_mode_values" />
+
+        <com.hippo.preference.ListPreference
+            android:defaultValue="chunk_one"
+            android:key="ai_analysis_mode"
+            android:summary=""
+            android:title="@string/ai_analysis_mode_title"
+            app:allowDividerAbove="true"
+            app:entries="@array/ai_analysis_mode_entries"
+            app:entryValues="@array/ai_analysis_mode_values" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

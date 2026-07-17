@@ -1171,27 +1171,43 @@ public class DownloadsScene extends ToolbarScene
                     break;
                 }
                 case 5: { // Enqueue to Translation Queue
-                    Log.d(TAG, "enter case 5 (enqueue translation) v2");
+                    Log.d(TAG, "enter case 5 (enqueue translation) v3");
                     final java.util.List<DownloadInfo> listForEnqueue = downloadInfoList != null ? new java.util.ArrayList<>(downloadInfoList) : new java.util.ArrayList<>();
                     Log.d(TAG, "enqueue translation case5 selected=" + listForEnqueue.size());
-                    EditTextDialogBuilder builder = new EditTextDialogBuilder(context, null, "起止页，例如 2-10");
-                    builder.setTitle("输入翻译页范围");
-                    builder.setPositiveButton(android.R.string.ok, null);
-                    builder.setNegativeButton(android.R.string.cancel, null);
+                    // 仅输入页面范围，翻译方式使用设置中的默认值
+                    final android.widget.EditText rangeEdit = new android.widget.EditText(context);
+                    rangeEdit.setHint("起止页，例如 2-10");
+                    int dp = (int) (getResources().getDisplayMetrics().density + 0.5f);
+                    android.widget.LinearLayout layout = new android.widget.LinearLayout(context);
+                    layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+                    layout.setPadding(16 * dp, 12 * dp, 16 * dp, 8 * dp);
+                    android.widget.LinearLayout.LayoutParams editLp =
+                            new android.widget.LinearLayout.LayoutParams(
+                                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+                    rangeEdit.setSingleLine(true);
+                    layout.addView(rangeEdit, editLp);
+
                     Log.d(TAG, "enqueue translation show dialog");
-                    androidx.appcompat.app.AlertDialog dlg = builder.show();
-                    Button okBtn = dlg.getButton(android.content.DialogInterface.BUTTON_POSITIVE);
+                    final androidx.appcompat.app.AlertDialog dlg = new androidx.appcompat.app.AlertDialog.Builder(context)
+                            .setTitle(R.string.translation_choose_range)
+                            .setView(layout)
+                            .setPositiveButton(android.R.string.ok, null)
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .create();
+                    dlg.show();
+                    final Button okBtn = dlg.getButton(android.content.DialogInterface.BUTTON_POSITIVE);
                     if (okBtn != null) {
                         okBtn.setOnClickListener(v -> {
-                            String text = builder.getText();
-                            String s = text == null ? "" : text.trim();
+                            String text = rangeEdit.getText() == null ? "" : rangeEdit.getText().toString().trim();
+                            String s = text;
                             Log.d(TAG, "range input raw=" + s);
                             int start = -1;
                             int end = -1;
                             try {
                                 String norm = s.replace('－','-').replace('—','-').replace('–','-');
                                 if (norm.isEmpty()) {
-                                    start = 0;
+                                    start = 1;
                                     end = 0;
                                 } else {
                                     String[] parts;
@@ -1216,7 +1232,7 @@ public class DownloadsScene extends ToolbarScene
                             }
                             Log.d(TAG, "range parsed start=" + start + ", end=" + end);
                             if ((start > 0 && end > 0 && end < start) || (start < 0 || end < 0)) {
-                                builder.setError("格式错误，示例：2-10");
+                                rangeEdit.setError("格式错误，示例：2-10");
                                 Log.d(TAG, "range invalid");
                                 return;
                             }
@@ -1225,52 +1241,65 @@ public class DownloadsScene extends ToolbarScene
                                 Log.d(TAG, "no selected items");
                                 return;
                             }
-                            for (DownloadInfo di : listForEnqueue) {
-                                final DownloadInfo diFinal = di;
-                                final Integer startBox = (start > 0) ? Integer.valueOf(start) : null;
-                                final Integer endBox = (end > 0) ? Integer.valueOf(end) : null;
-                                final MyEasyRecyclerView rvFinal = recyclerView;
-                                androidx.appcompat.app.AlertDialog pd;
-                                android.widget.LinearLayout layout = new android.widget.LinearLayout(context);
-                                layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-                                TextView tv = new TextView(context);
-                                final TextView tvFinal = tv;
-                                tvFinal.setText("准备中...");
-                                ProgressBar pb = new ProgressBar(context);
-                                pb.setIndeterminate(true);
-                                layout.addView(tvFinal);
-                                layout.addView(pb);
-                                pd = new androidx.appcompat.app.AlertDialog.Builder(context).setTitle("上传翻译").setView(layout).setCancelable(false).create();
-                                final androidx.appcompat.app.AlertDialog pdFinal = pd;
-                                pdFinal.show();
-                                new Thread(() -> {
-                                    try {
-                                        Activity act = getActivity2();
-                                        if (act != null) act.runOnUiThread(() -> tvFinal.setText("打包中..."));
-                                        File zip = TranslationQueueManager.buildZipFor(diFinal, startBox, endBox);
-                                        if (act != null) act.runOnUiThread(() -> tvFinal.setText("上传中..."));
-                                        String jobId = TranslationApi.submitZip(zip.getAbsolutePath());
-                                        try { zip.delete(); } catch (Exception ignored) {}
-                                        if (jobId != null) {
-                                            if (act != null) act.runOnUiThread(() -> tvFinal.setText("成功，jobId=" + jobId));
-                                            boolean added = TranslationQueueManager.getInstance().addUploadedJob(diFinal, jobId, startBox, endBox);
-                                            Log.d(TAG, "addUploadedJob gid=" + diFinal.gid + ", title=" + diFinal.title + ", jobId=" + jobId + ", added=" + added);
-                                        } else {
-                                            if (act != null) act.runOnUiThread(() -> tvFinal.setText("上传失败"));
-                                        }
-                                    } catch (Exception ex2) {
-                                        Activity act = getActivity2();
-                                        if (act != null) act.runOnUiThread(() -> tvFinal.setText("异常: " + ex2.getMessage()));
-                                    } finally {
-                                        Activity act = getActivity2();
-                                        if (act != null) act.runOnUiThread(() -> {
-                                            pdFinal.dismiss();
-                                            rvFinal.outOfCustomChoiceMode();
-                                        });
-                                    }
-                                }).start();
-                            }
                             dlg.dismiss();
+                            final int fStart = start;
+                            final int fEnd = end;
+                            final boolean useLlm = "llm".equals(Settings.getString("translation_default_method", "local"));
+                            if (useLlm) {
+                                // LLM range translation: enqueue locally
+                                for (DownloadInfo di : listForEnqueue) {
+                                    TranslationQueueManager.getInstance().enqueueRange(di, fStart, fEnd, true);
+                                }
+                                Toast.makeText(context, R.string.added_to_llm_queue, Toast.LENGTH_SHORT).show();
+                                recyclerView.outOfCustomChoiceMode();
+                            } else {
+                                // Legacy: pack + upload to server
+                                for (DownloadInfo di : listForEnqueue) {
+                                    final DownloadInfo diFinal = di;
+                                    final Integer startBox = (fStart > 0) ? Integer.valueOf(fStart) : null;
+                                    final Integer endBox = (fEnd > 0) ? Integer.valueOf(fEnd) : null;
+                                    final MyEasyRecyclerView rvFinal = recyclerView;
+                                    androidx.appcompat.app.AlertDialog pd;
+                                    android.widget.LinearLayout pdLayout = new android.widget.LinearLayout(context);
+                                    pdLayout.setOrientation(android.widget.LinearLayout.VERTICAL);
+                                    TextView tv = new TextView(context);
+                                    final TextView tvFinal = tv;
+                                    tvFinal.setText("准备中...");
+                                    ProgressBar pb = new ProgressBar(context);
+                                    pb.setIndeterminate(true);
+                                    pdLayout.addView(tvFinal);
+                                    pdLayout.addView(pb);
+                                    pd = new androidx.appcompat.app.AlertDialog.Builder(context).setTitle("上传翻译").setView(pdLayout).setCancelable(false).create();
+                                    final androidx.appcompat.app.AlertDialog pdFinal = pd;
+                                    pdFinal.show();
+                                    new Thread(() -> {
+                                        try {
+                                            Activity act = getActivity2();
+                                            if (act != null) act.runOnUiThread(() -> tvFinal.setText("打包中..."));
+                                            File zip = TranslationQueueManager.buildZipFor(diFinal, startBox, endBox);
+                                            if (act != null) act.runOnUiThread(() -> tvFinal.setText("上传中..."));
+                                            String jobId = TranslationApi.submitZip(zip.getAbsolutePath());
+                                            try { zip.delete(); } catch (Exception ignored) {}
+                                            if (jobId != null) {
+                                                if (act != null) act.runOnUiThread(() -> tvFinal.setText("成功，jobId=" + jobId));
+                                                boolean added = TranslationQueueManager.getInstance().addUploadedJob(diFinal, jobId, startBox, endBox);
+                                                Log.d(TAG, "addUploadedJob gid=" + diFinal.gid + ", title=" + diFinal.title + ", jobId=" + jobId + ", added=" + added);
+                                            } else {
+                                                if (act != null) act.runOnUiThread(() -> tvFinal.setText("上传失败"));
+                                            }
+                                        } catch (Exception ex2) {
+                                            Activity act = getActivity2();
+                                            if (act != null) act.runOnUiThread(() -> tvFinal.setText("异常: " + ex2.getMessage()));
+                                        } finally {
+                                            Activity act = getActivity2();
+                                            if (act != null) act.runOnUiThread(() -> {
+                                                pdFinal.dismiss();
+                                                rvFinal.outOfCustomChoiceMode();
+                                            });
+                                        }
+                                    }).start();
+                                }
+                            }
                         });
                     } else {
                         Log.d(TAG, "positive button null");
