@@ -256,6 +256,9 @@
     <string name="gallery_list_no_preview_tag">No preview tag</string>
 
     <string name="gallery_list_action_url_missed">Next page not found</string>
+    <string name="gallery_list_random_picking">Picking a random gallery…</string>
+    <string name="gallery_list_random_empty">The random page has no galleries, please try again</string>
+    <string name="gallery_list_random_failed">Failed to pick a random gallery</string>
     <string name="gallery_list_no_more_data">There is no more data for the current listing</string>
     <string name="gallery_list_date_jump_1d">Yesterday</string>
     <string name="gallery_list_date_jump_3d">Three days ago</string>

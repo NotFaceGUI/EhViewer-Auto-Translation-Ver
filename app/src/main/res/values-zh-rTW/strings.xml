@@ -164,6 +164,9 @@
     <string name="gallery_list_no_preview_tag">暫無預覽標籤</string>
 
     <string name="gallery_list_action_url_missed">未發現下一頁</string>
+    <string name="gallery_list_random_picking">正在隨機抽取…</string>
+    <string name="gallery_list_random_empty">隨機頁沒有畫廊，請重試</string>
+    <string name="gallery_list_random_failed">隨機抽取失敗</string>
     <string name="gallery_list_no_more_data">當前的列表無更多資料</string>
     <string name="gallery_list_date_jump_1d">昨天</string>
     <string name="gallery_list_date_jump_3d">三天前</string>

@@ -188,6 +188,10 @@ public final class GalleryListScene extends BaseScene
     @Nullable
     ListUrlBuilder mUrlBuilder;
 
+    private static final int MAX_RANDOM_PICK_ATTEMPTS = 3;
+    private boolean mRandomPicking = false;
+    private int mRandomPickAttempt = 0;
+
     /*---------------
      View life cycle
      ---------------*/
@@ -1480,16 +1484,114 @@ public final class GalleryListScene extends BaseScene
             case 2: // Refresh
                 mHelper.refresh();
                 break;
-            case 3:
-                List<GalleryInfo> gInfoL = mHelper.getData();
-                if (gInfoL == null || gInfoL.isEmpty()) {
-                    return;
-                }
-                onItemClick(null, gInfoL.get((int) (Math.random() * gInfoL.size())));
+            case 3: // Random gallery within the current search conditions
+                randomGallery();
                 break;
         }
 
         view.setExpanded(false);
+    }
+
+    /**
+     * Pick a random gallery from the whole result set of the current search conditions,
+     * not just the pages that have already been loaded into the list.
+     */
+    private void randomGallery() {
+        if (mHelper == null || mUrlBuilder == null || mClient == null) {
+            return;
+        }
+        List<GalleryInfo> loaded = mHelper.getData();
+        if (loaded == null || loaded.isEmpty()) {
+            return;
+        }
+        if (mRandomPicking) {
+            return;
+        }
+
+        int mode = mUrlBuilder.getMode();
+        int pages = mHelper.getPages();
+        // Modes without meaningful pagination, unknown page counts, or a single page:
+        // fall back to the galleries that are already loaded.
+        if (pages <= 1 || pages == Integer.MAX_VALUE
+                || mode == ListUrlBuilder.MODE_IMAGE_SEARCH
+                || mode == ListUrlBuilder.MODE_WHATS_HOT) {
+            onItemClick(null, loaded.get((int) (Math.random() * loaded.size())));
+            return;
+        }
+
+        mRandomPicking = true;
+        mRandomPickAttempt = 0;
+        Toast.makeText(getEHContext(), R.string.gallery_list_random_picking, Toast.LENGTH_SHORT).show();
+        requestRandomPage();
+    }
+
+    private void requestRandomPage() {
+        if (mHelper == null || mUrlBuilder == null || mClient == null) {
+            mRandomPicking = false;
+            return;
+        }
+        int mode = mUrlBuilder.getMode();
+        int pages = mHelper.getPages();
+        int bound = pages;
+        if (mode == ListUrlBuilder.MODE_TOP_LIST) {
+            // Top list only supports p=0..199.
+            bound = Math.min(bound, 200);
+        }
+        if (bound <= 0) {
+            mRandomPicking = false;
+            return;
+        }
+
+        int page = (int) (Math.random() * bound);
+        ListUrlBuilder builder = mUrlBuilder.clone();
+        builder.setPageIndex(page);
+        String url = builder.build();
+        if (url == null || url.isEmpty()) {
+            mRandomPicking = false;
+            onRandomGalleryFailure(null);
+            return;
+        }
+
+        MainActivity activity = getActivity2();
+        if (activity == null) {
+            mRandomPicking = false;
+            return;
+        }
+        EhRequest request = new EhRequest();
+        request.setMethod(EhClient.METHOD_GET_GALLERY_LIST);
+        request.setCallback(new GetRandomGalleryListener(
+                getEHContext(), activity.getStageId(), getTag()));
+        request.setArgs(url, mode);
+        mClient.execute(request);
+    }
+
+    private void onRandomGallerySuccess(GalleryListParser.Result result) {
+        if (!mRandomPicking) {
+            return;
+        }
+        mRandomPicking = false;
+        if (result != null && result.galleryInfoList != null && !result.galleryInfoList.isEmpty()) {
+            GalleryInfo gi = result.galleryInfoList.get(
+                    (int) (Math.random() * result.galleryInfoList.size()));
+            onItemClick(null, gi);
+            return;
+        }
+        // A randomly chosen page may be past the real end of the result set, or the
+        // site may have changed since the page count was parsed. Retry a few times.
+        if (++mRandomPickAttempt < MAX_RANDOM_PICK_ATTEMPTS) {
+            mRandomPicking = true;
+            requestRandomPage();
+        } else {
+            Toast.makeText(getEHContext(), R.string.gallery_list_random_empty, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void onRandomGalleryFailure(Exception e) {
+        mRandomPicking = false;
+        if (e != null) {
+            Log.w(TAG, "Failed to pick a random gallery", e);
+        }
+        Toast.makeText(getEHContext(), R.string.gallery_list_random_failed, Toast.LENGTH_SHORT).show();
     }
 
     public void onFilter(boolean open, int num) {
@@ -2187,6 +2289,42 @@ public final class GalleryListScene extends BaseScene
                 }
                 showActionFab();
             }
+        }
+    }
+
+    private static class GetRandomGalleryListener extends EhCallback<GalleryListScene, GalleryListParser.Result> {
+
+        public GetRandomGalleryListener(Context context, int stageId, String sceneTag) {
+            super(context, stageId, sceneTag);
+        }
+
+        @Override
+        public void onSuccess(GalleryListParser.Result result) {
+            GalleryListScene scene = getScene();
+            if (scene != null) {
+                scene.onRandomGallerySuccess(result);
+            }
+        }
+
+        @Override
+        public void onFailure(Exception e) {
+            GalleryListScene scene = getScene();
+            if (scene != null) {
+                scene.onRandomGalleryFailure(e);
+            }
+        }
+
+        @Override
+        public void onCancel() {
+            GalleryListScene scene = getScene();
+            if (scene != null) {
+                scene.mRandomPicking = false;
+            }
+        }
+
+        @Override
+        public boolean isInstance(SceneFragment scene) {
+            return scene instanceof GalleryListScene;
         }
     }
 

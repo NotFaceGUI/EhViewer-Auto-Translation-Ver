@@ -221,6 +221,9 @@
     <string name="search">搜索</string>
 
     <string name="gallery_list_action_url_missed">没找到下一页</string>
+    <string name="gallery_list_random_picking">正在随机抽取…</string>
+    <string name="gallery_list_random_empty">随机页没有画廊，请重试</string>
+    <string name="gallery_list_random_failed">随机抽取失败</string>
     <string name="gallery_list_no_more_data">当前列表没有更多数据</string>
     <string name="gallery_list_date_jump_1d">昨天</string>
     <string name="gallery_list_date_jump_3d">三天前</string>
