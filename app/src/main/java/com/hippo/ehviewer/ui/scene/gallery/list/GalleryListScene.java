@@ -139,6 +139,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class GalleryListScene extends BaseScene
         implements EasyRecyclerView.OnItemClickListener, EasyRecyclerView.OnItemLongClickListener,
@@ -189,8 +191,12 @@ public final class GalleryListScene extends BaseScene
     ListUrlBuilder mUrlBuilder;
 
     private static final int MAX_RANDOM_PICK_ATTEMPTS = 3;
+    private static final Pattern PATTERN_PAGE_INDEX = Pattern.compile("[?&]page=(\\d+)");
+    private static final Pattern PATTERN_NEXT_OFFSET = Pattern.compile("[?&]next=(\\d+)");
     private boolean mRandomPicking = false;
+    private boolean mRandomUseOffset = false;
     private int mRandomPickAttempt = 0;
+    private int mRandomRequestedPage = -1;
 
     /*---------------
      View life cycle
@@ -1509,49 +1515,187 @@ public final class GalleryListScene extends BaseScene
         }
 
         int mode = mUrlBuilder.getMode();
-        int pages = mHelper.getPages();
-        // Modes without meaningful pagination, unknown page counts, or a single page:
-        // fall back to the galleries that are already loaded.
-        if (pages <= 1 || pages == Integer.MAX_VALUE
-                || mode == ListUrlBuilder.MODE_IMAGE_SEARCH
+        Log.d(TAG, "randomGallery entry: mode=" + mode + ", pages=" + mHelper.getPages()
+                + ", loaded=" + loaded.size() + ", resultCount=" + mHelper.resultCount
+                + ", firstHref=" + mHelper.firstHref + ", nextHref=" + mHelper.nextHref
+                + ", lastHref=" + mHelper.lastHref);
+        // These modes have no meaningful pagination to sample from.
+        if (mode == ListUrlBuilder.MODE_IMAGE_SEARCH
                 || mode == ListUrlBuilder.MODE_WHATS_HOT) {
-            onItemClick(null, loaded.get((int) (Math.random() * loaded.size())));
+            pickFromLoaded(loaded);
             return;
         }
 
         mRandomPicking = true;
+        mRandomUseOffset = false;
         mRandomPickAttempt = 0;
-        Toast.makeText(getEHContext(), R.string.gallery_list_random_picking, Toast.LENGTH_SHORT).show();
+        mRandomRequestedPage = -1;
         requestRandomPage();
     }
 
+    /**
+     * Request one random page of the whole result set. The site sometimes omits the
+     * page count (pages == -1), so fall back to the page index in the last/next links.
+     */
     private void requestRandomPage() {
         if (mHelper == null || mUrlBuilder == null || mClient == null) {
             mRandomPicking = false;
             return;
         }
         int mode = mUrlBuilder.getMode();
+
+        int lastPage = resolveLastPage();
+        if (lastPage < 0 && !mRandomUseOffset) {
+            // The site may hide the page count; estimate it from the result count.
+            lastPage = estimateLastPage();
+        }
+        if (lastPage >= 0 && !mRandomUseOffset) {
+            int bound = lastPage + 1;
+            if (mode == ListUrlBuilder.MODE_TOP_LIST) {
+                // Top list only supports p=0..199.
+                bound = Math.min(bound, 200);
+            }
+            if (bound <= 0) {
+                mRandomPicking = false;
+                return;
+            }
+            int page = (int) (Math.random() * bound);
+            ListUrlBuilder builder = mUrlBuilder.clone();
+            builder.setPageIndex(page);
+            String url = builder.build();
+            if (url == null || url.isEmpty()) {
+                onRandomGalleryFailure(null);
+                return;
+            }
+            mRandomRequestedPage = page;
+            Log.d(TAG, "requestRandomPage: page=" + page + ", bound=" + bound + ", url=" + url);
+            executeRandomRequest(url, mode);
+            return;
+        }
+
+        // Newer list layouts use next=<gallery id> instead of page numbers.
+        String offsetUrl = buildRandomOffsetUrl();
+        if (offsetUrl != null) {
+            mRandomRequestedPage = -1;
+            Log.d(TAG, "requestRandomOffset: url=" + offsetUrl);
+            executeRandomRequest(offsetUrl, mode);
+            return;
+        }
+
+        // Last resort: pick from what is already loaded.
+        List<GalleryInfo> loaded = mHelper.getData();
+        mRandomPicking = false;
+        if (loaded != null && !loaded.isEmpty()) {
+            pickFromLoaded(loaded);
+        }
+    }
+
+    private int resolveLastPage() {
+        if (mHelper == null) {
+            return -1;
+        }
         int pages = mHelper.getPages();
-        int bound = pages;
-        if (mode == ListUrlBuilder.MODE_TOP_LIST) {
-            // Top list only supports p=0..199.
-            bound = Math.min(bound, 200);
+        if (pages > 1 && pages != Integer.MAX_VALUE) {
+            return pages - 1;
         }
-        if (bound <= 0) {
-            mRandomPicking = false;
-            return;
-        }
+        int fromHref = parsePageIndex(mHelper.lastHref);
+        return fromHref >= 0 ? fromHref : -1;
+    }
 
-        int page = (int) (Math.random() * bound);
-        ListUrlBuilder builder = mUrlBuilder.clone();
-        builder.setPageIndex(page);
-        String url = builder.build();
+    private int estimateLastPage() {
+        if (mHelper == null || mHelper.resultCount == null) {
+            return -1;
+        }
+        StringBuilder digits = new StringBuilder();
+        for (int i = 0; i < mHelper.resultCount.length(); i++) {
+            char c = mHelper.resultCount.charAt(i);
+            if (c >= '0' && c <= '9') {
+                digits.append(c);
+            }
+        }
+        if (digits.length() == 0) {
+            return -1;
+        }
+        long count;
+        try {
+            count = Long.parseLong(digits.toString());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+        // 25 galleries per page.
+        long pages = (count + 24) / 25;
+        if (pages <= 1) {
+            return -1;
+        }
+        // Guard against absurd estimates; the retry logic handles capped pages.
+        return (int) Math.min(pages - 1, 100000);
+    }
+
+    /**
+     * Build a URL with a random next= offset when the site exposes gallery-id based
+     * pagination (first/next/last links) instead of a numeric page count.
+     */
+    private String buildRandomOffsetUrl() {
+        if (mHelper == null) {
+            return null;
+        }
+        long first = parseNextOffset(mHelper.firstHref);
+        long last = parseNextOffset(mHelper.lastHref);
+        String base;
+        long low;
+        long high;
+        if (first > 0 && last > 0) {
+            low = Math.min(first, last);
+            high = Math.max(first, last);
+            base = mHelper.lastHref;
+        } else {
+            long next = parseNextOffset(mHelper.nextHref);
+            if (next <= 0) {
+                return null;
+            }
+            low = 1;
+            high = next;
+            base = mHelper.nextHref;
+        }
+        if (base == null || base.isEmpty()) {
+            return null;
+        }
+        long offset = low + (long) (Math.random() * (high - low + 1));
+        String url = base.replaceFirst("([?&]next=)\\d+", "$1" + offset);
+        return url.equals(base) ? null : url;
+    }
+
+    private static int parsePageIndex(String url) {
         if (url == null || url.isEmpty()) {
-            mRandomPicking = false;
-            onRandomGalleryFailure(null);
-            return;
+            return -1;
         }
+        Matcher matcher = PATTERN_PAGE_INDEX.matcher(url);
+        if (!matcher.find()) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(matcher.group(1));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
 
+    private static long parseNextOffset(String url) {
+        if (url == null || url.isEmpty()) {
+            return -1;
+        }
+        Matcher matcher = PATTERN_NEXT_OFFSET.matcher(url);
+        if (!matcher.find()) {
+            return -1;
+        }
+        try {
+            return Long.parseLong(matcher.group(1));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    private void executeRandomRequest(String url, int mode) {
         MainActivity activity = getActivity2();
         if (activity == null) {
             mRandomPicking = false;
@@ -1565,14 +1709,35 @@ public final class GalleryListScene extends BaseScene
         mClient.execute(request);
     }
 
+    private void pickFromLoaded(List<GalleryInfo> loaded) {
+        mRandomPicking = false;
+        onItemClick(null, loaded.get((int) (Math.random() * loaded.size())));
+    }
+
     private void onRandomGallerySuccess(GalleryListParser.Result result) {
         if (!mRandomPicking) {
             return;
         }
         mRandomPicking = false;
         if (result != null && result.galleryInfoList != null && !result.galleryInfoList.isEmpty()) {
+            List<GalleryInfo> loaded = mHelper != null ? mHelper.getData() : null;
+            long nextGid = mHelper != null ? parseNextOffset(mHelper.nextHref) : -1;
+            boolean pageParamIgnored = mRandomRequestedPage > 0
+                    && (nextGid > 0 && result.galleryInfoList.get(0).gid >= nextGid
+                    || loaded != null && !loaded.isEmpty()
+                    && result.galleryInfoList.get(0).gid == loaded.get(0).gid);
+            if (pageParamIgnored) {
+                // The site returned the first page for a page=N request; switch to
+                // next=<gallery id> pagination instead of accepting a today gallery.
+                mRandomUseOffset = true;
+                mRandomPicking = true;
+                requestRandomPage();
+                return;
+            }
             GalleryInfo gi = result.galleryInfoList.get(
                     (int) (Math.random() * result.galleryInfoList.size()));
+            Log.d(TAG, "onRandomGallerySuccess: size=" + result.galleryInfoList.size()
+                    + ", pages=" + result.pages + ", gid=" + gi.gid);
             onItemClick(null, gi);
             return;
         }
