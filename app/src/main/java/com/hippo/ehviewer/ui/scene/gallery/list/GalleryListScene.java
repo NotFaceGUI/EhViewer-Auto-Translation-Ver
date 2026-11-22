@@ -193,6 +193,8 @@ public final class GalleryListScene extends BaseScene
     @Nullable
     private String mPendingRandomPageUrl;
 
+    private long mRandomMaxGid = -1;
+
     private static final int MAX_RANDOM_PICK_ATTEMPTS = 3;
     private static final Pattern PATTERN_PAGE_INDEX = Pattern.compile("[?&]page=(\\d+)");
     private static final Pattern PATTERN_NEXT_OFFSET = Pattern.compile("[?&]next=(\\d+)");
@@ -1559,6 +1561,14 @@ public final class GalleryListScene extends BaseScene
 
         int lastPage = resolveLastPage();
         long nextGid = parseNextOffset(mHelper.nextHref);
+        long loadedGid = loaded.get(0).gid;
+        if (nextGid > mRandomMaxGid) {
+            mRandomMaxGid = nextGid;
+        }
+        if (loadedGid > mRandomMaxGid) {
+            mRandomMaxGid = loadedGid;
+        }
+        long maxGid = mRandomMaxGid;
 
         List<String> urls = new ArrayList<>();
         List<Integer> kinds = new ArrayList<>();
@@ -1572,9 +1582,9 @@ public final class GalleryListScene extends BaseScene
                 kinds.add(0);
             }
         }
-        if (nextGid > 1) {
+        if (maxGid > 1) {
             for (int i = 0; i < 2; i++) {
-                String url = buildRandomOffsetUrl(nextGid);
+                String url = buildRandomOffsetUrl(maxGid);
                 if (url != null) {
                     urls.add(url);
                     kinds.add(1);
@@ -1596,7 +1606,7 @@ public final class GalleryListScene extends BaseScene
         args.putStringArray(ProgressScene.KEY_RANDOM_URLS, urlArray);
         args.putIntArray(ProgressScene.KEY_RANDOM_KINDS, kindArray);
         args.putInt(ProgressScene.KEY_RANDOM_MODE, mode);
-        args.putLong(ProgressScene.KEY_RANDOM_NEXT_GID, nextGid);
+        args.putLong(ProgressScene.KEY_RANDOM_NEXT_GID, maxGid);
         args.putString(ProgressScene.KEY_RANDOM_LIST_TAG, getTag());
         startScene(new Announcer(ProgressScene.class).setArgs(args));
     }
