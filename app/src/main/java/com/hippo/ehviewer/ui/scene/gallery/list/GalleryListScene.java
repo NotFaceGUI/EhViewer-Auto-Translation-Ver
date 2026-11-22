@@ -190,6 +190,9 @@ public final class GalleryListScene extends BaseScene
     @Nullable
     ListUrlBuilder mUrlBuilder;
 
+    @Nullable
+    private String mPendingRandomPageUrl;
+
     private static final int MAX_RANDOM_PICK_ATTEMPTS = 3;
     private static final Pattern PATTERN_PAGE_INDEX = Pattern.compile("[?&]page=(\\d+)");
     private static final Pattern PATTERN_NEXT_OFFSET = Pattern.compile("[?&]next=(\\d+)");
@@ -1200,6 +1203,7 @@ public final class GalleryListScene extends BaseScene
     @Override
     public void onResume() {
         super.onResume();
+        applyPendingRandomPage();
         if (mBookmarksDraw == null) {
             return;
         }
@@ -1208,6 +1212,38 @@ public final class GalleryListScene extends BaseScene
             return;
         }
         mSubscriptionDraw.resume();
+    }
+
+    /**
+     * Called by the random-gallery progress scene. When the list becomes visible again
+     * (i.e. the user presses back from the random gallery), jump to the result page
+     * the gallery was picked from.
+     */
+    public void setPendingRandomPage(@Nullable String url) {
+        mPendingRandomPageUrl = url;
+    }
+
+    private void applyPendingRandomPage() {
+        String url = mPendingRandomPageUrl;
+        if (url == null || url.isEmpty() || mHelper == null || mUrlBuilder == null
+                || mRecyclerView == null) {
+            return;
+        }
+        mPendingRandomPageUrl = null;
+
+        int page = parsePageIndex(url);
+        int pages = mHelper.getPages();
+        if (page >= 0 && pages > 1 && page < pages) {
+            mHelper.goTo(page);
+            return;
+        }
+
+        // The site currently uses next=<gallery id> pagination, so load the exact
+        // random result page by handing its URL to the helper.
+        int oldPage = mUrlBuilder.getPageIndex();
+        mHelper.nextHref = url;
+        mHelper.goTo(-996);
+        mUrlBuilder.setPageIndex(oldPage);
     }
 
     @Override
@@ -1561,6 +1597,7 @@ public final class GalleryListScene extends BaseScene
         args.putIntArray(ProgressScene.KEY_RANDOM_KINDS, kindArray);
         args.putInt(ProgressScene.KEY_RANDOM_MODE, mode);
         args.putLong(ProgressScene.KEY_RANDOM_NEXT_GID, nextGid);
+        args.putString(ProgressScene.KEY_RANDOM_LIST_TAG, getTag());
         startScene(new Announcer(ProgressScene.class).setArgs(args));
     }
 

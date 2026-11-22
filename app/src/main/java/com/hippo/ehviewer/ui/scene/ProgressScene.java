@@ -33,6 +33,7 @@ import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.client.parser.GalleryListParser;
 import com.hippo.ehviewer.ui.MainActivity;
 import com.hippo.ehviewer.ui.scene.gallery.detail.GalleryDetailScene;
+import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListScene;
 import com.hippo.scene.Announcer;
 import com.hippo.scene.SceneFragment;
 import com.hippo.util.DrawableManager;
@@ -54,6 +55,7 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
     public static final String KEY_RANDOM_KINDS = "random_kinds";
     public static final String KEY_RANDOM_MODE = "random_mode";
     public static final String KEY_RANDOM_NEXT_GID = "random_next_gid";
+    public static final String KEY_RANDOM_LIST_TAG = "random_list_tag";
 
     private static final String KEY_VALID = "valid";
     private static final String KEY_ERROR = "error";
@@ -77,6 +79,8 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
     private long mRandomNextGid = -1;
     private int mRandomIndex;
     private int mRandomCurrentKind = 1;
+    private String mRandomListTag;
+    private String mRandomCurrentUrl;
 
     @Nullable
     private TextView mTip;
@@ -137,6 +141,7 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
             mRandomKinds = args.getIntArray(KEY_RANDOM_KINDS);
             mRandomMode = args.getInt(KEY_RANDOM_MODE, 0);
             mRandomNextGid = args.getLong(KEY_RANDOM_NEXT_GID, -1);
+            mRandomListTag = args.getString(KEY_RANDOM_LIST_TAG);
             mRandomIndex = 0;
             return mRandomUrls != null && mRandomUrls.length > 0;
         }
@@ -177,6 +182,8 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
         mRandomKinds = savedInstanceState.getIntArray(KEY_RANDOM_KINDS);
         mRandomMode = savedInstanceState.getInt(KEY_RANDOM_MODE, 0);
         mRandomNextGid = savedInstanceState.getLong(KEY_RANDOM_NEXT_GID, -1);
+        mRandomListTag = savedInstanceState.getString(KEY_RANDOM_LIST_TAG);
+        mRandomCurrentUrl = savedInstanceState.getString("random_current_url");
         mRandomIndex = savedInstanceState.getInt("random_index", 0);
     }
 
@@ -196,6 +203,8 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
         outState.putIntArray(KEY_RANDOM_KINDS, mRandomKinds);
         outState.putInt(KEY_RANDOM_MODE, mRandomMode);
         outState.putLong(KEY_RANDOM_NEXT_GID, mRandomNextGid);
+        outState.putString(KEY_RANDOM_LIST_TAG, mRandomListTag);
+        outState.putString("random_current_url", mRandomCurrentUrl);
         outState.putInt("random_index", mRandomIndex);
     }
 
@@ -268,6 +277,7 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
             }
             mRandomCurrentKind = mRandomKinds != null && index < mRandomKinds.length
                     ? mRandomKinds[index] : 1;
+            mRandomCurrentUrl = url;
             EhRequest request = new EhRequest()
                     .setMethod(EhClient.METHOD_GET_GALLERY_LIST)
                     .setArgs(url, mRandomMode)
@@ -285,6 +295,14 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
             boolean pageIgnored = mRandomCurrentKind == 0 && mRandomNextGid > 0
                     && result.galleryInfoList.get(0).gid >= mRandomNextGid;
             if (!pageIgnored) {
+                if (mRandomListTag != null && mRandomCurrentUrl != null) {
+                    MainActivity activity = getActivity2();
+                    SceneFragment listScene = activity != null
+                            ? activity.findSceneByTag(mRandomListTag) : null;
+                    if (listScene instanceof GalleryListScene) {
+                        ((GalleryListScene) listScene).setPendingRandomPage(mRandomCurrentUrl);
+                    }
+                }
                 GalleryInfo info = result.galleryInfoList.get(
                         (int) (Math.random() * result.galleryInfoList.size()));
                 Bundle arg = new Bundle();
