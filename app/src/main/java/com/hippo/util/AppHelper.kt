@@ -153,8 +153,8 @@ class AppHelper {
             val parts2 = version2.split("\\.".toRegex()).toTypedArray()
             val length = parts1.size.coerceAtLeast(parts2.size)
             for (i in 0 until length) {
-                val part1 = if (i < parts1.size) parts1[i].toInt() else 0
-                val part2 = if (i < parts2.size) parts2[i].toInt() else 0
+                val part1 = if (i < parts1.size) parseVersionPart(parts1[i]) else 0
+                val part2 = if (i < parts2.size) parseVersionPart(parts2[i]) else 0
                 if (part1 < part2) {
                     return -1
                 } else if (part1 > part2) {
@@ -162,6 +162,15 @@ class AppHelper {
                 }
             }
             return 0
+        }
+
+        /**
+         * Parse the numeric prefix of one version segment, so custom suffixes such as
+         * "2.0.2.3-at" do not crash the update checker.
+         */
+        private fun parseVersionPart(part: String): Int {
+            val digits = part.takeWhile { it.isDigit() }
+            return if (digits.isEmpty()) 0 else digits.toIntOrNull() ?: 0
         }
     }
 }
