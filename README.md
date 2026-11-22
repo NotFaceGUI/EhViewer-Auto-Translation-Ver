@@ -32,6 +32,102 @@ Fork 来源：基于 `Ehviewer_CN_SXJ` 仓库二次开发并聚焦翻译功能�
 ## 下载地址
 
 [//]: # (- [Appteka]&#40;https://appteka.store/app/acdr168648&#41;)
+- [百度云](https://pan.baidu.com/s/1Vp7H8NhuUix33BZCpfX_pA) 提取码：26d1
+- [夸克网盘](https://pan.quark.cn/s/a2a1bdc3a742) 提取码：S31f
+- [蓝奏云](https://wwbfg.lanzoum.com/i4AyK4eewfmh)，电脑端可正常下载 提取码：f3bu
+- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- Torrent链接:magnet:?xt=urn:btih:9952183b0cfe6436777c0e98647b3b679918d3fa&xt=urn:btmh:12204c2d4243e981d7677c80bb16bcc1192051fe5b85569905974fd152a54682ecf6&dn=EhViewer-2.0.2.7.apk&xl=28245951
+
+
+# Changelog
+
+## 2026/11/02
+### 新版发布2.0.2.7
+- 添加本地导入筛选功能
+- 修复导入本地画廊信息时可能崩溃的问题
+- 新增从 CBOR 格式读取本地画廊的功能
+- 汞齐 ：avoid leaking the buffer global ref in create stream helpers (#2878)
+
+## 2026/10/21
+### 新版发布2.0.2.6 
+- 表站图床host过期，紧急修复
+- [百度云](https://pan.baidu.com/s/1Wh2RFStPi3kXZfcukrzMFA) 提取码：7ygg
+- [夸克网盘](https://pan.quark.cn/s/208df8b1b622) 提取码：wjVU
+- [蓝奏云](https://wwbfg.lanzoum.com/ip60n4cuuj0b)，电脑端可正常下载 提取码：a8rq
+- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- Torrent链接:magnet:?xt=urn:btih:998657a2387c0b12ff251fb74b586e0c3f3fdeba&xt=urn:btmh:122070097613c643682396a645c26a601777e7b127e999621aa417f224113e8363a8&dn=EhViewer-2.0.2.6.apk&xl=28229547
+
+
+
+## 2026/10/01
+### 新版发布2.0.2.5 国庆节快乐~
+
+- 为 Gallery_Tags 增加 LOCATION 标签分类，并同步更新相关数据库处理
+- 改进 SpiderInfo 解析并增强 RestoreDownloadPreference 功能
+- 添加阅读刷新率设置功能
+- 重构下载页，新增下载归档导入、批量操作、选择监听器、搜索控制器及分页控制器
+- 修复阅读进度重置功能 by: Mios-dream
+- 添加本地相册导入功能
+- 修复归档解压因文件名超长导致的导入失败
+- [百度云](https://pan.baidu.com/s/1COJPa_ZtIWFtvEvuYmZd7A) 提取码：e13i
+- [夸克网盘](https://pan.quark.cn/s/1e9696cf63ae) 提取码：dY97
+- [蓝奏云](https://wwbfg.lanzouu.com/iNrjO4afcy0b)，电脑端可正常下载 提取码：fobb
+- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- Torrent链接:magnet:?xt=urn:btih:9566ada427877a16f0a95e26c54223c10e131fa3&xt=urn:btmh:1220b9a286b9fd236df79d91f6fdc1c77682890e2f6b368ae66d58740cb2cdad433a&dn=EhViewer-2.0.2.5.apk&xl=28229476
+
+
+## 2026/09/01 
+### 新版发布2.0.2.4 
+
+- 更新Gradle插件和Gradle包装器版本
+- 增强异常处理，捕获 NoSuchElementException 以避免潜在的错误
+- 添加读取画廊信息头的功能，优化内存处理并增强异常捕获
+- 添加封面图像对话框功能，优化下载服务通知和动画效果
+- 重构SelectItemWithIconAdapter为Kotlin并删除旧Java实现
+- 更新归档下载功能，重构下载管理器为Kotlin，添加新服务和进度通知，添加暂停继续下载功能
+- 在更新对话框中增加支持链接与赞助按钮
+- 猫尾草: 抽离下载信息监听器接口
+- [百度云](https://pan.baidu.com/s/1pJl_NzCt46YlLv494kUuKw) 提取码：9mej
+- [夸克网盘](https://pan.quark.cn/s/873901763b79) 提取码：ULkh
+- [蓝奏云](https://wwbfg.lanzouu.com/iqgrh3zxrdah)，电脑端可正常下载 提取码：73tu
+- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- Torrent链接:magnet:?xt=urn:btih:7289464887abcd77f106c84f7ab395e5d6e74465&xt=urn:btmh:122013a4f6850078100eab8e49819aa9a34f29c1f88856089413cf2bf236453d4302&dn=EhViewer-2.0.2.3.apk&xl=27747455
+
+
+## 2026/09/01
+### 新版发布2.0.2.4
+
+- 更新Gradle插件和Gradle包装器版本
+- 增强异常处理，捕获 NoSuchElementException 以避免潜在的错误
+- 添加读取画廊信息头的功能，优化内存处理并增强异常捕获
+- 添加封面图像对话框功能，优化下载服务通知和动画效果
+- 重构SelectItemWithIconAdapter为Kotlin并删除旧Java实现
+- 更新归档下载功能，重构下载管理器为Kotlin，添加新服务和进度通知，添加暂停继续下载功能
+- 在更新对话框中增加支持链接与赞助按钮
+- 猫尾草: 抽离下载信息监听器接口
+
+
+## 2026/08/01
+### 新版发布2.0.2.3 建军节快乐~
+
+- 修复页码显示延迟的问题
+- 添加重置阅读进度功能以更新UI
+- 更新 AboutFragment 以使用 setPreferencesFromResource，确保仅在满足条件时设置偏好项点击监听器
+- 修复drawable赋值逻辑以避免潜在的空指针异常
+- 增强图像解码错误处理，避免空值返回并记录警告
+- 添加获取可编辑评论的功能，更新相关解析器和UI逻辑
+- [百度云](https://pan.baidu.com/s/1pJl_NzCt46YlLv494kUuKw) 提取码：9mej
+- [夸克网盘](https://pan.quark.cn/s/873901763b79) 提取码：ULkh
+- [蓝奏云](https://wwbfg.lanzouu.com/iqgrh3zxrdah)，电脑端可正常下载 提取码：73tu
+- [GitHub](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)
+- Torrent链接:magnet:?xt=urn:btih:7289464887abcd77f106c84f7ab395e5d6e74465&xt=urn:btmh:122013a4f6850078100eab8e49819aa9a34f29c1f88856089413cf2bf236453d4302&dn=EhViewer-2.0.2.3.apk&xl=27747455
+
+
+## 2026/08/01
+### 新版发布2.0.2.2
+
+- 修复了浏览历史未正确保存的问题
+- 修复评论时输入框被键盘遮挡的问题
 - [百度云](https://pan.baidu.com/s/1rh-lvEc-QjiMtfPi6T1BKA) 提取码：7p6z
 - [夸克网盘](https://pan.quark.cn/s/0de32f69e12a) 提取码：SnVD
 - [蓝奏云](https://wwbfg.lanzouu.com/iWAFL3uefh8d)，电脑端可正常下载 提取码：3txx
@@ -82,13 +178,6 @@ Fork 来源：基于 `Ehviewer_CN_SXJ` 仓库二次开发并聚焦翻译功能�
   </tr>
 </table>
 
-## 社区与更新日志
-
-唯一X账号：https://x.com/Sherloc21784244    
-Telegram群: https://telegram.me/+WyclP8pPlk-JfbwS   
-Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel   
-
-
 # Changelog
 ## 2026/07/17
 ### 新版发布 2.0.2.3-at
@@ -99,169 +188,7 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - **翻译设置增强**：新增"文本翻译模型"设置，可选择已配置的 OpenAI 兼容 Provider 用于评论/标题翻译
 - **翻译方式预设**：移除每次翻译时选择"大模型/本地"的弹窗，改为设置页预设默认方式，一键翻译更快捷
 - 版本号后缀从 `-llm` 改为 `-at`
-- 修复了浏览历史未正确保存的问题
-- 修复评论时输入框被键盘遮挡的问题
-
-## 2026/07/01
-### 新版发布2.0.2.2
-
-- 修复了浏览历史未正确保存的问题
-- 修复评论时输入框被键盘遮挡的问题
-
-
-## 2026/07/01 
-### 新版发布2.0.2.1
-
-- 修复底部导航栏导致的页面遮蔽问题
-- 修复浏览画廊时图片会自动下载到下载目录的问题
-- 实现WiFi下载迁移功能：将数据传世方式从json变更为二进制帧，新增了下载目录的迁移项
-- 添加多语言支持的下载目录迁移字符串资源
-- 添加“阅读时同步下载”功能：设置-下载-观看时同步下载
-- 增强下载恢复功能：添加了在从层次结构中分离时取消任务的逻辑
-- 更新 Gradle 版本和插件
-- [百度云](https://pan.baidu.com/s/19ZEEdF3waR3hkMghbmu7rw) 提取码：gxsj
-- [夸克网盘](https://pan.quark.cn/s/bffd976d75c4) 提取码：TJDR
-- [蓝奏云](https://wwbfg.lanzouu.com/iZPct3u2hxef)，电脑端可正常下载 提取码：1obh
-- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
-- Torrent链接:magnet:?xt=urn:btih:76cf0c1951465d0ab5e4e6fc0b4f371aceec8f9c&xt=urn:btmh:12201dbee30e3448b93d0b725ba19c5fe6a19b042dd662fe9ef898d92c3e67ca6c80&dn=EhViewer-2.0.2.1.apk&xl=27747322
-
-
-
-## 2026/06/01 祝大家六一儿童节快乐~
-### 新版发布2.0.1.8
-
-- 将 jsoup 从 1.18.1 降级到 1.15.4，以避免在某些 Android 环境中出现 NoClassDefFoundError
-- 在 EhDB 中添加了空检查，以防止快速搜索操作期间潜在的 NullPointerExceptions
-- 增强了 EhEngine 中 TopListParser 的错误处理，以在运行时错误上引发更具描述性的 ParseException
-- 重构SpiderDen，确保访问下载目录时的线程安全
-- 改进了 ArchiverDownloadDialog 中的文件名处理，以防止非法路径和长文件名
-- 添加了 ArchiverDownloadCompleter 来处理存档器任务的下载完成和状态检查
-- 在 EhApplication 中集成挂起的下载恢复
-- 增强设置，提供管理待处理存档下载的方法
-- 更新了 ArchiverDownloadDialog 以利用 ArchiverDownloadCompleter 进行下载处理
-- 改进了 ArchiverDownloadProgress 中的下载进度跟踪
-- 确保在 SpiderDen 中创建下载目录
-- 猫尾草：添加小米系统优化助手，优化后台下载和通知管理
-- 猫尾草：add gradle wrapper jar and properties for CI build
-- Cololi：沉浸式底部导航栏 (#2597)
-- [百度云](https://pan.baidu.com/s/1hFLjNrU-_c1u8iugt82d6g) 提取码：wz2h
-- [夸克网盘](https://pan.quark.cn/s/133080ed0571) 提取码：ekzT
-- [蓝奏云](https://wwbfg.lanzouu.com/i1hv53qtvjba)，电脑端可正常下载 提取码：eg80
-- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
-- Torrent链接:magnet:?xt=urn:btih:a14acab7edec4b1c5f10d291296fda3e19449a0d&xt=urn:btmh:1220f25dba401d5db2cfb2d864114728418c1e7bf746679182a3155ef3e1714539cb&dn=EhViewer-2.0.1.8.apk&xl=27739161
-
-
-## 2026/05/01 祝大家五一劳动节快乐~
-### 新版发布2.0.1.7
-
-- 修复SpiderInfo读取时的OOM风险并升级JDK至21
-- 修复图片搜索无法使用的问题
-- orbisai0security：the vendored giflib library performs multiple m... in gifalloc.c
-- 增加对 WebView/CookieManager 初始化失败的异常处理
-- En：修复了已下载项目的按标签搜索功能
-- 猫尾草：restore gradle wrapper jar and properties
-- 升级Gradle至9.3.1及Android插件至9.1.1
-- [百度云](https://pan.baidu.com/s/17a5zwo0HeTp_Iqh9P2QwXQ) 提取码：7y92
-- [夸克网盘](https://pan.quark.cn/s/036dd4d5f09d) 提取码：B6J6
-- [蓝奏云](https://wwbfg.lanzouu.com/iFc783oecgmh)，电脑端可正常下载 提取码：dfg8
-- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
-- Torrent链接:magnet:?xt=urn:btih:c3aab1194eb843bac7274b87873dc94041310e52&xt=urn:btmh:1220c3640ed2ef7f588376f7dadeffc99463d764608b577beb038378788996fc1ad5&dn=EhViewer-2.0.1.7.apk&xl=27705830
-
-
-## 2026/04/01 祝大家愚人节伤心
-### 新版发布2.0.1.6
-
-- 搜索时过滤文本中的换行符
-- 修复下载列表排序奔溃的问题
-- 优化 EGL 初始化逻辑并增加 OpenGL 渲染故障时的回退机制
-- 排行榜中，画廊排行从原先的跳转画廊搜索，改为直接跳转对应画廊
-- 优化归档下载逻辑与文件名生成
-- 优化解析错误日志清理逻辑并增加异常处理
-- 优化搜索文本过滤，直接移除换行符而非替换为空格
-- 修正登录WebView客户端设置及资料获取逻辑
-- 升级SDK版本并启用coreLibraryDesugaring
-- miki sayaga：新增一个多标签搜索组合页面（未完成）
-- 修复部分多标签搜索组合页面bug
-- 将部分代码从java迁移到kotlin
-- [百度云](https://pan.baidu.com/s/1koygBtTteJtDHZTQYL8wXQ) 提取码：iqev
-- [夸克网盘](https://pan.quark.cn/s/b41421a61e70) 提取码：MrnK
-- [蓝奏云](https://wwbfg.lanzouu.com/iNSBF3m1jveb)，电脑端可正常下载 提取码：i4f8
-- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
-- Torrent链接:magnet:?xt=urn:btih:8488a933608f5b3901de8a2bedc669e20ff94839&xt=urn:btmh:1220dbe6fffcb6aff255e089e3bb0cefeb33940c27d82e37163252abe4813c987e33&dn=EhViewer-2.0.1.6.apk&xl=27702785
-
-
-## 2026/03/01 提前祝大家元宵节快乐
-### 新版发布2.0.1.5
-
-- 调整 Analytics上报字段
-- 将部分代码从java迁移到kotlin
-- 修复 `BitmapUtils` 中的潜在整数溢出问题
-- 优化VPN检测逻辑，增加权限检查和异常处理
-- 优化登录流程异常处理和进度显示
-- 清理请求头中的换行符避免崩溃
-- 调整下载列表页面的标题格式
-- zyl-hub：修复了在搜索框不为空时的搜索历史补全
-- [百度云](https://pan.baidu.com/s/1_rbxH65GXWjx_pxYIf0Pug) 提取码：wzv4
-- [夸克网盘](https://pan.quark.cn/s/95915acfe88b) 提取码：HmUu
-- [蓝奏云](https://wwbfg.lanzouu.com/iYopw3jiyizi)，电脑端可正常下载 提取码：fhbq
-- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
-- Torrent链接:magnet:?xt=urn:btih:4869fe5d6cebba6e1f2b672e3523cca83838b466&xt=urn:btmh:1220df01410d828d8544b9efe8e15fe3e7323eab74d2ae962947f324dd36e0a99b74&dn=EhViewer-2.0.1.5.apk&xl=27934862
-
-
-## 2026/02/01 给大家提前拜个早年，祝大家新春快乐~
-### 新版发布2.0.1.4
-
-- 更新通过webview 通过cloudflare验证获取用户名称的功能（裸连目前无法使用此功能）
-- 修复略缩图因状态共用导致的重复显示同一张图片
-- 登录时，修复用户名称获取逻辑，由于技术限制，sni开启的情况下无法通过机器人验证
-  网页登录只能使用VPN进行
-- 在裸连使用cookie登录时，现在会跳过获取用户详情步骤
-- 更新安卓targetSdkVersion到30，所有用户需要授予管理文件权限，否则将无法读取旧画廊
-- [百度云](https://pan.baidu.com/s/1VD8NwRZTUVkO5hsTCPd95A) 提取码：hfms
-- [夸克网盘](https://pan.quark.cn/s/685e409e6164) 提取码：yiie
-- [蓝奏云](https://wwbfg.lanzouu.com/iM6GO3hj88cd)，电脑端可正常下载 提取码：cjgb
-- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
-- Torrent链接: magnet:?xt=urn:btih:fd7fb29419c9b6f7a22bbbd899500fb828e2e5ce&xt=urn:btmh:1220aa0bf5802d34adeb7e60b17f0466f951a4d96dd4ab5b06158af2690bee2cb073&dn=EhViewer-2.0.1.4.apk&xl=27623297
-
-
-## 2026/01/05 紧急修复
-### 新版发布2.0.1.2
-
-- 暂时回滚图片解码方式，等后续优化好了再上
-
-## 2026/01/04 紧急修复
-### 新版发布2.0.1.1
-
-- 限制了详情页初始加载的预览图数量为40张，以减少初次创建视图的开销。
-- 修复了 `DownloadFragment` 中因 Activity 销毁后关闭对话框可能导致的崩溃问题
-- 修复了下载列表画廊的删除和拖拽排序无法及时生效的问题
-- [百度云](https://pan.baidu.com/s/1EPEqfeklH0Pdk_mEiuJ8rQ) 提取码：9cas
-- [夸克网盘](https://pan.quark.cn/s/cb19c11bcb6d) 提取码：WJWs
-- [蓝奏云](https://wwbfg.lanzouu.com/ipmeo3fa1umh)，电脑端可正常下载 提取码：4jop
-- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
-- Torrent链接: magnet:?xt=urn:btih:a547ca192aada5109bbf891bc5ea21b04d50972e&xt=urn:btmh:12209bc1fe78c6f1b431a120f2a24dc89556f5a8da767f710d8b6840a461146fc434&dn=EhViewer-2.0.1.1.apk&xl=27606911
-
-
-## 2026/01/01 祝大家新年快乐~
-### 新版发布2.0.1.0
-
-- 新增下载页拖拽排序设置项，允许用户启用或禁用该功能
-- 该设置现在会被保存，以便在应用重启后保持不变
-- 回归到旧版图片解码代码，引入libwebp插件，并添加webp图片格式的处理方法
-- 更新依赖项并为 16KB 页面大小设备添加适配
-- 调整下载场景 FAB 图标
-- HaYaShi: 下载画廊添加文件大小排序 (#2321)
-- 为下载分类添加“全部”选项并优化布局
-- 当解析 URL 失败时，会通过 `FirebaseCrashlytics` 记录异常，以防止应用崩溃并帮助调试。
-- 同步德语、西班牙语、法语、韩语、泰语、日语和繁体中文翻译
-- 猫尾草：新增按分类筛选下载内容的功能
-- 猫尾草：给恢复下载项、清空下载冗余新增进度条，免得等的有问题
-- 猫尾草：在设置-EH选项卡新增当前系统主题显示，方便查看bug（这样容易分辨是否是系统造成的问题）
-- [百度云](https://pan.baidu.com/s/1ZOzR9W24cDRVYtiR_msOoQ) 提取码：2rsb
-- [夸克网盘](https://pan.quark.cn/s/b023fa0249dd) 提取码：iKSY
-- [蓝奏云](https://wwbfg.lanzouu.com/iSJdX3eyu95g)，电脑端可正常下载 提取码：92ad
-- [GitHub](https://github.com/NotFaceGUI/EhViewer-Auto-Translation-Ver/releases)
-- Torrent链接: magnet:?xt=urn:btih:241667f787c7f5d62e393d2404d2f9e2280d9cfb&xt=urn:btmh:122067d50a27f6b620b065a961d4cb2ad048e470b1e3b416ced2468c19d3b0d0cf61&dn=EhViewer-2.0.1.0.apk&xl=27606133
+- 新增支持 BallonsTranslator / manga-translator-ui 本地服务的 API 调用，与现有 API 接口兼容
 
 ## 自用声明
 
@@ -290,9 +217,10 @@ Telegram通知群: https://telegram.me/Ehviewer_xiaojieonly_channel
 - 端口与主机在应用“设置-翻译设置”中配置：`translation_base_host/服务器主机`、`translation_base_port/服务器端口`。
 - 输出格式建议 `webp`, 保持与输入相同的尺寸与质量。
 
-- 快速部署示例（基于 Manga Translator）：
-  - 仓库地址：`https://github.com/NotFaceGUI/manga-translator-ui-dev`（部署与依赖说明见其 README）。
-  - 启动手机端 API 服务：`launch_jobs_api.py --port 8001`
+- 推荐服务端方案：
+  - **BallonsTranslator / manga-translator-ui**：基于 `hgmzhn/manga-translator-ui`，内置 API 服务（接口与本项目完全兼容）。部署与依赖说明见其 README。
+  - 仓库地址：`https://github.com/NotFaceGUI/manga-translator-ui-dev`
+  - 启动手机端 API 服务：`launch_jobs_api.py --port 8001`（或双击 `启动5-手机API服务.bat`）
   - 在应用中配置"设置-翻译设置"：填入服务主机与端口（默认 8001），使用"测试连接"确认可用后即可开始上传 zip/单页进行翻译。
   - 配置通过软件本身的 `examples/config.json` 管理，API 不支持远程修改。
 

@@ -38,6 +38,7 @@ import android.os.Looper;
 import android.os.StrictMode;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -101,6 +102,7 @@ import com.hippo.ehviewer.translation.TranslationMeta;
 import com.hippo.ehviewer.translation.TranslationMetaStore;
 import com.hippo.ehviewer.spider.SpiderDen;
 import com.hippo.app.EditTextDialogBuilder;
+import com.hippo.ehviewer.util.ReadingRefreshRate;
 import com.hippo.util.ExceptionUtils;
 import com.hippo.util.SystemUiHelper;
 import com.hippo.widget.ColorView;
@@ -469,6 +471,8 @@ public class GalleryActivity extends EhActivity implements SeekBar.OnSeekBarChan
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
 
+        applyReadingRefreshRate();
+
         // Orientation
         int orientation;
         switch (Settings.getScreenRotation()) {
@@ -508,26 +512,18 @@ public class GalleryActivity extends EhActivity implements SeekBar.OnSeekBarChan
         }
     }
 
+    /**
+     * 只确认系统能拿到默认 EGL display。
+     * 不能在主线程调用 eglInitialize 或 eglTerminate：EGL_DEFAULT_DISPLAY 是进程级的，
+     * eglTerminate 会把 GL 线程正在使用的 display 拆掉，随后 eglChooseConfig 返回 0x3001。
+     */
     private boolean isEglAvailable() {
-        EGL10 egl = (EGL10) EGLContext.getEGL();
-        EGLDisplay display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
-        if (display == null || display == EGL10.EGL_NO_DISPLAY) {
-            return false;
-        }
-
-        int[] version = new int[2];
-        if (!egl.eglInitialize(display, version)) {
-            return false;
-        }
-
         try {
-            int[] numConfig = new int[1];
-            return egl.eglChooseConfig(display, new int[]{EGL10.EGL_NONE}, null, 0, numConfig)
-                    && numConfig[0] > 0;
+            EGL10 egl = (EGL10) EGLContext.getEGL();
+            EGLDisplay display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
+            return display != null && display != EGL10.EGL_NO_DISPLAY;
         } catch (Throwable e) {
             return false;
-        } finally {
-            egl.eglTerminate(display);
         }
     }
 
@@ -599,6 +595,7 @@ public class GalleryActivity extends EhActivity implements SeekBar.OnSeekBarChan
     protected void onResume() {
         super.onResume();
 
+        applyReadingRefreshRate();
         if (mGLRootView != null) {
             mGLRootView.onResume();
         }
@@ -1012,6 +1009,29 @@ public class GalleryActivity extends EhActivity implements SeekBar.OnSeekBarChan
             lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
         }
         w.setAttributes(lp);
+    }
+
+    private void applyReadingRefreshRate() {
+        if (!ReadingRefreshRate.isSupported()) {
+            return;
+        }
+        Window window = getWindow();
+        WindowManager.LayoutParams lp = window.getAttributes();
+        int setting = Settings.getReadingRefreshRateHz();
+        if (setting == ReadingRefreshRate.SYSTEM_DEFAULT) {
+            lp.preferredRefreshRate = 0f;
+            lp.preferredDisplayModeId = 0;
+        } else {
+            Display.Mode mode = ReadingRefreshRate.findBestMode(getDisplay(), setting);
+            if (mode != null) {
+                lp.preferredDisplayModeId = mode.getModeId();
+                lp.preferredRefreshRate = 0f;
+            } else {
+                lp.preferredRefreshRate = 0f;
+                lp.preferredDisplayModeId = 0;
+            }
+        }
+        window.setAttributes(lp);
     }
 
     private void shareImage(int page) {

@@ -56,6 +56,7 @@ import com.hippo.ehviewer.client.parser.GalleryListParser;
 import com.hippo.ehviewer.client.parser.GalleryPageApiParser;
 import com.hippo.ehviewer.client.parser.GalleryPageParser;
 import com.hippo.ehviewer.client.parser.GalleryTokenApiParser;
+import com.hippo.ehviewer.client.parser.GetEditCommentParser;
 import com.hippo.ehviewer.client.parser.MyTagLitParser;
 import com.hippo.ehviewer.client.parser.ProfileParser;
 import com.hippo.ehviewer.client.parser.RateGalleryParser;
@@ -312,6 +313,29 @@ public class EhEngine {
         return galleryInfoList;
     }
 
+    /**
+     * 与 {@link #fillGalleryListByApi} 一样每批最多 25 条，但某一批失败只记日志并继续下一批。
+     * 已经补上的画廊信息会保留。供恢复下载使用，避免一次失败丢掉整份本地列表。
+     */
+    public static List<GalleryInfo> fillGalleryListByApiBestEffort(@Nullable EhClient.Task task, OkHttpClient okHttpClient,
+                                                                   List<GalleryInfo> galleryInfoList, String referer) {
+        final int MAX_REQUEST_SIZE = 25;
+        List<GalleryInfo> requestItems = new ArrayList<>(MAX_REQUEST_SIZE);
+        for (int i = 0, size = galleryInfoList.size(); i < size; i++) {
+            requestItems.add(galleryInfoList.get(i));
+            if (requestItems.size() == MAX_REQUEST_SIZE || i == size - 1) {
+                try {
+                    doFillGalleryListByApi(task, okHttpClient, requestItems, referer);
+                } catch (Throwable e) {
+                    ExceptionUtils.throwIfFatal(e);
+                    Log.e(TAG, "gdata batch failed", e);
+                }
+                requestItems.clear();
+            }
+        }
+        return galleryInfoList;
+    }
+
     private static void doFillGalleryListByApi(@Nullable EhClient.Task task, OkHttpClient okHttpClient,
                                                List<GalleryInfo> galleryInfoList, String referer) throws Throwable {
         JSONObject json = new JSONObject();
@@ -500,6 +524,48 @@ public class EhEngine {
             }
 
             return GalleryDetailParser.parseComments(document);
+        } catch (Throwable e) {
+            ExceptionUtils.throwIfFatal(e);
+            throwException(call, code, headers, body, e);
+            throw e;
+        }
+    }
+
+    public static GetEditCommentParser.Result getEditComment(@Nullable EhClient.Task task,
+                                                             OkHttpClient okHttpClient, long apiUid,
+                                                             String apiKey, long gid, String token,
+                                                             long commentId) throws Throwable {
+        final JSONObject json = new JSONObject();
+        json.put("method", "geteditcomment");
+        json.put("apiuid", apiUid);
+        json.put("apikey", apiKey);
+        json.put("gid", gid);
+        json.put("token", token);
+        json.put("comment_id", commentId);
+        final RequestBody requestBody = RequestBody.create(MEDIA_TYPE_JSON, json.toString());
+        String url = EhUrl.getApiUrl();
+        String referer = EhUrl.getGalleryDetailUrl(gid, token);
+        String origin = EhUrl.getOrigin();
+        Log.d(TAG, url);
+        Request request = new EhRequestBuilder(url, referer, origin)
+                .post(requestBody)
+                .build();
+        Call call = okHttpClient.newCall(request);
+
+        if (task != null) {
+            task.setCall(call);
+        }
+
+        String body = null;
+        Headers headers = null;
+        int code = -1;
+        try {
+            Response response = call.execute();
+            code = response.code();
+            headers = response.headers();
+            assert response.body() != null;
+            body = response.body().string();
+            return GetEditCommentParser.parse(body);
         } catch (Throwable e) {
             ExceptionUtils.throwIfFatal(e);
             throwException(call, code, headers, body, e);
