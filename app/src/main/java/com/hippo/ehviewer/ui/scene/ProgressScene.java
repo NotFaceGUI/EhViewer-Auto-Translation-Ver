@@ -29,6 +29,8 @@ import com.hippo.ehviewer.EhApplication;
 import com.hippo.ehviewer.R;
 import com.hippo.ehviewer.client.EhClient;
 import com.hippo.ehviewer.client.EhRequest;
+import com.hippo.ehviewer.client.data.GalleryInfo;
+import com.hippo.ehviewer.client.parser.GalleryListParser;
 import com.hippo.ehviewer.ui.MainActivity;
 import com.hippo.ehviewer.ui.scene.gallery.detail.GalleryDetailScene;
 import com.hippo.scene.Announcer;
@@ -46,6 +48,12 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
 
     public static final String KEY_ACTION = "action";
     public static final String ACTION_GALLERY_TOKEN = "gallery_token";
+    public static final String ACTION_RANDOM_GALLERY = "random_gallery";
+
+    public static final String KEY_RANDOM_URLS = "random_urls";
+    public static final String KEY_RANDOM_KINDS = "random_kinds";
+    public static final String KEY_RANDOM_MODE = "random_mode";
+    public static final String KEY_RANDOM_NEXT_GID = "random_next_gid";
 
     private static final String KEY_VALID = "valid";
     private static final String KEY_ERROR = "error";
@@ -62,6 +70,13 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
     private long mGid;
     private String mPToken;
     private int mPage;
+
+    private String[] mRandomUrls;
+    private int[] mRandomKinds;
+    private int mRandomMode;
+    private long mRandomNextGid = -1;
+    private int mRandomIndex;
+    private int mRandomCurrentKind = 1;
 
     @Nullable
     private TextView mTip;
@@ -91,6 +106,10 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
             return false;
         }
 
+        if (ACTION_RANDOM_GALLERY.equals(mAction)) {
+            return startNextRandomJob();
+        }
+
         if (ACTION_GALLERY_TOKEN.equals(mAction)) {
             if (mGid == -1 || mPToken == null || mPage == -1) {
                 return false;
@@ -113,6 +132,14 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
         }
 
         mAction = args.getString(KEY_ACTION);
+        if (ACTION_RANDOM_GALLERY.equals(mAction)) {
+            mRandomUrls = args.getStringArray(KEY_RANDOM_URLS);
+            mRandomKinds = args.getIntArray(KEY_RANDOM_KINDS);
+            mRandomMode = args.getInt(KEY_RANDOM_MODE, 0);
+            mRandomNextGid = args.getLong(KEY_RANDOM_NEXT_GID, -1);
+            mRandomIndex = 0;
+            return mRandomUrls != null && mRandomUrls.length > 0;
+        }
         if (ACTION_GALLERY_TOKEN.equals(mAction)) {
             mGid = args.getLong(KEY_GID, -1);
             mPToken = args.getString(KEY_PTOKEN, null);
@@ -145,6 +172,12 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
         mGid = savedInstanceState.getLong(KEY_GID, -1);
         mPToken = savedInstanceState.getString(KEY_PTOKEN, null);
         mPage = savedInstanceState.getInt(KEY_PAGE, -1);
+
+        mRandomUrls = savedInstanceState.getStringArray(KEY_RANDOM_URLS);
+        mRandomKinds = savedInstanceState.getIntArray(KEY_RANDOM_KINDS);
+        mRandomMode = savedInstanceState.getInt(KEY_RANDOM_MODE, 0);
+        mRandomNextGid = savedInstanceState.getLong(KEY_RANDOM_NEXT_GID, -1);
+        mRandomIndex = savedInstanceState.getInt("random_index", 0);
     }
 
     @Override
@@ -158,6 +191,12 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
         outState.putLong(KEY_GID, mGid);
         outState.putString(KEY_PTOKEN, mPToken);
         outState.putInt(KEY_PAGE, mPage);
+
+        outState.putStringArray(KEY_RANDOM_URLS, mRandomUrls);
+        outState.putIntArray(KEY_RANDOM_KINDS, mRandomKinds);
+        outState.putInt(KEY_RANDOM_MODE, mRandomMode);
+        outState.putLong(KEY_RANDOM_NEXT_GID, mRandomNextGid);
+        outState.putInt("random_index", mRandomIndex);
     }
 
     @Nullable
@@ -199,6 +238,9 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
     @Override
     public void onClick(View v) {
         if (mTip == v) {
+            if (ACTION_RANDOM_GALLERY.equals(mAction)) {
+                mRandomIndex = 0;
+            }
             if (doJobs()) {
                 mValid = true;
                 // Show progress
@@ -206,6 +248,70 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
                     mViewTransition.showView(0, true);
                 }
             }
+        }
+    }
+
+    private boolean startNextRandomJob() {
+        if (mRandomUrls == null) {
+            return false;
+        }
+        Context context = getEHContext();
+        MainActivity activity = getActivity2();
+        if (context == null || activity == null) {
+            return false;
+        }
+        while (mRandomIndex < mRandomUrls.length) {
+            int index = mRandomIndex++;
+            String url = mRandomUrls[index];
+            if (url == null || url.isEmpty()) {
+                continue;
+            }
+            mRandomCurrentKind = mRandomKinds != null && index < mRandomKinds.length
+                    ? mRandomKinds[index] : 1;
+            EhRequest request = new EhRequest()
+                    .setMethod(EhClient.METHOD_GET_GALLERY_LIST)
+                    .setArgs(url, mRandomMode)
+                    .setCallback(new GetRandomGalleryListener(
+                            context, activity.getStageId(), getTag()));
+            EhApplication.getEhClient(context).execute(request);
+            return true;
+        }
+        return false;
+    }
+
+    private void onGetRandomGallerySuccess(GalleryListParser.Result result) {
+        if (result != null && result.galleryInfoList != null
+                && !result.galleryInfoList.isEmpty()) {
+            boolean pageIgnored = mRandomCurrentKind == 0 && mRandomNextGid > 0
+                    && result.galleryInfoList.get(0).gid >= mRandomNextGid;
+            if (!pageIgnored) {
+                GalleryInfo info = result.galleryInfoList.get(
+                        (int) (Math.random() * result.galleryInfoList.size()));
+                Bundle arg = new Bundle();
+                arg.putString(GalleryDetailScene.KEY_ACTION, GalleryDetailScene.ACTION_GALLERY_INFO);
+                arg.putParcelable(GalleryDetailScene.KEY_GALLERY_INFO, info);
+                startScene(new Announcer(GalleryDetailScene.class).setArgs(arg));
+                finish();
+                return;
+            }
+        }
+        if (!startNextRandomJob()) {
+            showRandomError(getString(R.string.gallery_list_random_empty));
+        }
+    }
+
+    private void onGetRandomGalleryFailure(Exception e) {
+        showRandomError(ExceptionUtils.getReadableString(e));
+    }
+
+    private void showRandomError(String message) {
+        mValid = false;
+        mError = message;
+        if (mViewTransition != null) {
+            mViewTransition.showView(1);
+        }
+        if (mTip != null) {
+            mTip.setText(message);
         }
     }
 
@@ -229,6 +335,38 @@ public final class ProgressScene extends BaseScene implements View.OnClickListen
             mError = ExceptionUtils.getReadableString(e);
             mViewTransition.showView(1);
             mTip.setText(mError);
+        }
+    }
+
+    private static class GetRandomGalleryListener extends EhCallback<ProgressScene, GalleryListParser.Result> {
+
+        public GetRandomGalleryListener(Context context, int stageId, String sceneTag) {
+            super(context, stageId, sceneTag);
+        }
+
+        @Override
+        public void onSuccess(GalleryListParser.Result result) {
+            ProgressScene scene = getScene();
+            if (scene != null) {
+                scene.onGetRandomGallerySuccess(result);
+            }
+        }
+
+        @Override
+        public void onFailure(Exception e) {
+            ProgressScene scene = getScene();
+            if (scene != null) {
+                scene.onGetRandomGalleryFailure(e);
+            }
+        }
+
+        @Override
+        public void onCancel() {
+        }
+
+        @Override
+        public boolean isInstance(SceneFragment scene) {
+            return scene instanceof ProgressScene;
         }
     }
 

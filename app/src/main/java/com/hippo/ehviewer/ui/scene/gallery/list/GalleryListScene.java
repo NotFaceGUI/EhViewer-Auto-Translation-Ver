@@ -1502,92 +1502,81 @@ public final class GalleryListScene extends BaseScene
      * Pick a random gallery from the whole result set of the current search conditions,
      * not just the pages that have already been loaded into the list.
      */
+    /**
+     * Open the progress scene immediately, then let it load one random page from the
+     * whole current result set and jump to a random gallery on that page.
+     */
     private void randomGallery() {
-        if (mHelper == null || mUrlBuilder == null || mClient == null) {
+        if (mHelper == null || mUrlBuilder == null) {
             return;
         }
         List<GalleryInfo> loaded = mHelper.getData();
         if (loaded == null || loaded.isEmpty()) {
             return;
         }
-        if (mRandomPicking) {
-            return;
-        }
-
         int mode = mUrlBuilder.getMode();
-        Log.d(TAG, "randomGallery entry: mode=" + mode + ", pages=" + mHelper.getPages()
-                + ", loaded=" + loaded.size() + ", resultCount=" + mHelper.resultCount
-                + ", firstHref=" + mHelper.firstHref + ", nextHref=" + mHelper.nextHref
-                + ", lastHref=" + mHelper.lastHref);
-        // These modes have no meaningful pagination to sample from.
         if (mode == ListUrlBuilder.MODE_IMAGE_SEARCH
                 || mode == ListUrlBuilder.MODE_WHATS_HOT) {
             pickFromLoaded(loaded);
             return;
         }
 
-        mRandomPicking = true;
-        mRandomUseOffset = false;
-        mRandomPickAttempt = 0;
-        mRandomRequestedPage = -1;
-        requestRandomPage();
-    }
-
-    /**
-     * Request one random page of the whole result set. The site sometimes omits the
-     * page count (pages == -1), so fall back to the page index in the last/next links.
-     */
-    private void requestRandomPage() {
-        if (mHelper == null || mUrlBuilder == null || mClient == null) {
-            mRandomPicking = false;
-            return;
-        }
-        int mode = mUrlBuilder.getMode();
-
         int lastPage = resolveLastPage();
-        if (lastPage < 0 && !mRandomUseOffset) {
-            // The site may hide the page count; estimate it from the result count.
-            lastPage = estimateLastPage();
-        }
-        if (lastPage >= 0 && !mRandomUseOffset) {
+        long nextGid = parseNextOffset(mHelper.nextHref);
+
+        List<String> urls = new ArrayList<>();
+        List<Integer> kinds = new ArrayList<>();
+        if (lastPage >= 1) {
             int bound = lastPage + 1;
             if (mode == ListUrlBuilder.MODE_TOP_LIST) {
-                // Top list only supports p=0..199.
                 bound = Math.min(bound, 200);
             }
-            if (bound <= 0) {
-                mRandomPicking = false;
-                return;
+            if (bound > 0) {
+                urls.add(buildRandomPageUrl(bound));
+                kinds.add(0);
             }
-            int page = (int) (Math.random() * bound);
-            ListUrlBuilder builder = mUrlBuilder.clone();
-            builder.setPageIndex(page);
-            String url = builder.build();
-            if (url == null || url.isEmpty()) {
-                onRandomGalleryFailure(null);
-                return;
+        }
+        if (nextGid > 1) {
+            for (int i = 0; i < 2; i++) {
+                String url = buildRandomOffsetUrl(nextGid);
+                if (url != null) {
+                    urls.add(url);
+                    kinds.add(1);
+                }
             }
-            mRandomRequestedPage = page;
-            Log.d(TAG, "requestRandomPage: page=" + page + ", bound=" + bound + ", url=" + url);
-            executeRandomRequest(url, mode);
-            return;
         }
-
-        // Newer list layouts use next=<gallery id> instead of page numbers.
-        String offsetUrl = buildRandomOffsetUrl();
-        if (offsetUrl != null) {
-            mRandomRequestedPage = -1;
-            Log.d(TAG, "requestRandomOffset: url=" + offsetUrl);
-            executeRandomRequest(offsetUrl, mode);
-            return;
-        }
-
-        // Last resort: pick from what is already loaded.
-        List<GalleryInfo> loaded = mHelper.getData();
-        mRandomPicking = false;
-        if (loaded != null && !loaded.isEmpty()) {
+        if (urls.isEmpty()) {
             pickFromLoaded(loaded);
+            return;
         }
+
+        String[] urlArray = urls.toArray(new String[0]);
+        int[] kindArray = new int[kinds.size()];
+        for (int i = 0; i < kindArray.length; i++) {
+            kindArray[i] = kinds.get(i);
+        }
+        Bundle args = new Bundle();
+        args.putString(ProgressScene.KEY_ACTION, ProgressScene.ACTION_RANDOM_GALLERY);
+        args.putStringArray(ProgressScene.KEY_RANDOM_URLS, urlArray);
+        args.putIntArray(ProgressScene.KEY_RANDOM_KINDS, kindArray);
+        args.putInt(ProgressScene.KEY_RANDOM_MODE, mode);
+        args.putLong(ProgressScene.KEY_RANDOM_NEXT_GID, nextGid);
+        startScene(new Announcer(ProgressScene.class).setArgs(args));
+    }
+
+    private String buildRandomPageUrl(int bound) {
+        int page = (int) (Math.random() * bound);
+        ListUrlBuilder builder = mUrlBuilder.clone();
+        builder.setPageIndex(page);
+        return builder.build();
+    }
+
+    private String buildRandomOffsetUrl(long nextGid) {
+        if (mHelper == null || mHelper.nextHref == null || mHelper.nextHref.isEmpty()) {
+            return null;
+        }
+        long offset = 1 + (long) (Math.random() * (nextGid - 1));
+        return mHelper.nextHref.replaceFirst("([?&]next=)\\d+", "$1" + offset);
     }
 
     private int resolveLastPage() {
@@ -1600,69 +1589,6 @@ public final class GalleryListScene extends BaseScene
         }
         int fromHref = parsePageIndex(mHelper.lastHref);
         return fromHref >= 0 ? fromHref : -1;
-    }
-
-    private int estimateLastPage() {
-        if (mHelper == null || mHelper.resultCount == null) {
-            return -1;
-        }
-        StringBuilder digits = new StringBuilder();
-        for (int i = 0; i < mHelper.resultCount.length(); i++) {
-            char c = mHelper.resultCount.charAt(i);
-            if (c >= '0' && c <= '9') {
-                digits.append(c);
-            }
-        }
-        if (digits.length() == 0) {
-            return -1;
-        }
-        long count;
-        try {
-            count = Long.parseLong(digits.toString());
-        } catch (NumberFormatException e) {
-            return -1;
-        }
-        // 25 galleries per page.
-        long pages = (count + 24) / 25;
-        if (pages <= 1) {
-            return -1;
-        }
-        // Guard against absurd estimates; the retry logic handles capped pages.
-        return (int) Math.min(pages - 1, 100000);
-    }
-
-    /**
-     * Build a URL with a random next= offset when the site exposes gallery-id based
-     * pagination (first/next/last links) instead of a numeric page count.
-     */
-    private String buildRandomOffsetUrl() {
-        if (mHelper == null) {
-            return null;
-        }
-        long first = parseNextOffset(mHelper.firstHref);
-        long last = parseNextOffset(mHelper.lastHref);
-        String base;
-        long low;
-        long high;
-        if (first > 0 && last > 0) {
-            low = Math.min(first, last);
-            high = Math.max(first, last);
-            base = mHelper.lastHref;
-        } else {
-            long next = parseNextOffset(mHelper.nextHref);
-            if (next <= 0) {
-                return null;
-            }
-            low = 1;
-            high = next;
-            base = mHelper.nextHref;
-        }
-        if (base == null || base.isEmpty()) {
-            return null;
-        }
-        long offset = low + (long) (Math.random() * (high - low + 1));
-        String url = base.replaceFirst("([?&]next=)\\d+", "$1" + offset);
-        return url.equals(base) ? null : url;
     }
 
     private static int parsePageIndex(String url) {
@@ -1695,68 +1621,8 @@ public final class GalleryListScene extends BaseScene
         }
     }
 
-    private void executeRandomRequest(String url, int mode) {
-        MainActivity activity = getActivity2();
-        if (activity == null) {
-            mRandomPicking = false;
-            return;
-        }
-        EhRequest request = new EhRequest();
-        request.setMethod(EhClient.METHOD_GET_GALLERY_LIST);
-        request.setCallback(new GetRandomGalleryListener(
-                getEHContext(), activity.getStageId(), getTag()));
-        request.setArgs(url, mode);
-        mClient.execute(request);
-    }
-
     private void pickFromLoaded(List<GalleryInfo> loaded) {
-        mRandomPicking = false;
         onItemClick(null, loaded.get((int) (Math.random() * loaded.size())));
-    }
-
-    private void onRandomGallerySuccess(GalleryListParser.Result result) {
-        if (!mRandomPicking) {
-            return;
-        }
-        mRandomPicking = false;
-        if (result != null && result.galleryInfoList != null && !result.galleryInfoList.isEmpty()) {
-            List<GalleryInfo> loaded = mHelper != null ? mHelper.getData() : null;
-            long nextGid = mHelper != null ? parseNextOffset(mHelper.nextHref) : -1;
-            boolean pageParamIgnored = mRandomRequestedPage > 0
-                    && (nextGid > 0 && result.galleryInfoList.get(0).gid >= nextGid
-                    || loaded != null && !loaded.isEmpty()
-                    && result.galleryInfoList.get(0).gid == loaded.get(0).gid);
-            if (pageParamIgnored) {
-                // The site returned the first page for a page=N request; switch to
-                // next=<gallery id> pagination instead of accepting a today gallery.
-                mRandomUseOffset = true;
-                mRandomPicking = true;
-                requestRandomPage();
-                return;
-            }
-            GalleryInfo gi = result.galleryInfoList.get(
-                    (int) (Math.random() * result.galleryInfoList.size()));
-            Log.d(TAG, "onRandomGallerySuccess: size=" + result.galleryInfoList.size()
-                    + ", pages=" + result.pages + ", gid=" + gi.gid);
-            onItemClick(null, gi);
-            return;
-        }
-        // A randomly chosen page may be past the real end of the result set, or the
-        // site may have changed since the page count was parsed. Retry a few times.
-        if (++mRandomPickAttempt < MAX_RANDOM_PICK_ATTEMPTS) {
-            mRandomPicking = true;
-            requestRandomPage();
-        } else {
-            Toast.makeText(getEHContext(), R.string.gallery_list_random_empty, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void onRandomGalleryFailure(Exception e) {
-        mRandomPicking = false;
-        if (e != null) {
-            Log.w(TAG, "Failed to pick a random gallery", e);
-        }
-        Toast.makeText(getEHContext(), R.string.gallery_list_random_failed, Toast.LENGTH_SHORT).show();
     }
 
     public void onFilter(boolean open, int num) {
@@ -2454,42 +2320,6 @@ public final class GalleryListScene extends BaseScene
                 }
                 showActionFab();
             }
-        }
-    }
-
-    private static class GetRandomGalleryListener extends EhCallback<GalleryListScene, GalleryListParser.Result> {
-
-        public GetRandomGalleryListener(Context context, int stageId, String sceneTag) {
-            super(context, stageId, sceneTag);
-        }
-
-        @Override
-        public void onSuccess(GalleryListParser.Result result) {
-            GalleryListScene scene = getScene();
-            if (scene != null) {
-                scene.onRandomGallerySuccess(result);
-            }
-        }
-
-        @Override
-        public void onFailure(Exception e) {
-            GalleryListScene scene = getScene();
-            if (scene != null) {
-                scene.onRandomGalleryFailure(e);
-            }
-        }
-
-        @Override
-        public void onCancel() {
-            GalleryListScene scene = getScene();
-            if (scene != null) {
-                scene.mRandomPicking = false;
-            }
-        }
-
-        @Override
-        public boolean isInstance(SceneFragment scene) {
-            return scene instanceof GalleryListScene;
         }
     }
 
